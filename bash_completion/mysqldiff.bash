@@ -1,4 +1,4 @@
-#! /bin/bash
+#!/bin/bash
 
 _cli_bash_autocomplete() {
   if [[ "${COMP_WORDS[0]}" != "source" ]]; then
