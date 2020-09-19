@@ -83,6 +83,7 @@ type Statistic struct {
 	IndexType    string
 	COMMENT      sql.NullString
 	IndexComment string
+	IsVisible    sql.NullString
 }
 
 func main() {
@@ -476,6 +477,7 @@ func main() {
 							&statistic.IndexType,
 							&statistic.COMMENT,
 							&statistic.IndexComment,
+							&statistic.IsVisible,
 						)
 
 						if err != nil {
@@ -513,6 +515,7 @@ func main() {
 							&statistic.IndexType,
 							&statistic.COMMENT,
 							&statistic.IndexComment,
+							&statistic.IsVisible,
 						)
 
 						if err != nil {
@@ -688,6 +691,7 @@ func main() {
 								&statistic.IndexType,
 								&statistic.COMMENT,
 								&statistic.IndexComment,
+								&statistic.IsVisible,
 							)
 
 							if err != nil {
