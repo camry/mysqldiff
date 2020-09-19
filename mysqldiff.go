@@ -154,7 +154,8 @@ func main() {
 			var sourceSchema Schema
 			var targetSchema Schema
 
-			err = sourceDb.QueryRow("SELECT * FROM `information_schema`.`SCHEMATA` WHERE `SCHEMA_NAME` = ?", databases[0]).Scan(
+			err = sourceDb.QueryRow("SELECT `CATALOG_NAME`, `SCHEMA_NAME`, `DEFAULT_CHARACTER_SET_NAME`, `DEFAULT_COLLATION_NAME`, `SQL_PATH` " +
+				"FROM `information_schema`.`SCHEMATA` WHERE `SCHEMA_NAME` = ?", databases[0]).Scan(
 				&sourceSchema.CatalogName,
 				&sourceSchema.SchemaName,
 				&sourceSchema.DefaultCharacterSetName,
@@ -166,7 +167,8 @@ func main() {
 				return err
 			}
 
-			err = targetDb.QueryRow("SELECT * FROM `information_schema`.`SCHEMATA` WHERE `SCHEMA_NAME` = ?", databases[1]).Scan(
+			err = targetDb.QueryRow("SELECT `CATALOG_NAME`, `SCHEMA_NAME`, `DEFAULT_CHARACTER_SET_NAME`, `DEFAULT_COLLATION_NAME`, `SQL_PATH` " +
+				"FROM `information_schema`.`SCHEMATA` WHERE `SCHEMA_NAME` = ?", databases[1]).Scan(
 				&targetSchema.CatalogName,
 				&targetSchema.SchemaName,
 				&targetSchema.DefaultCharacterSetName,
@@ -181,7 +183,8 @@ func main() {
 			// fmt.Println(sourceSchema)
 			// fmt.Println(targetSchema)
 
-			sourceTableRows, err := sourceDb.Query("SELECT * FROM `information_schema`.`TABLES` WHERE `TABLE_SCHEMA` = ? ORDER BY `TABLE_NAME` ASC", databases[0])
+			sourceTableRows, err := sourceDb.Query("SELECT `TABLE_CATALOG`, `TABLE_SCHEMA`, `TABLE_NAME`, `TABLE_TYPE`, `ENGINE`, `VERSION`, `ROW_FORMAT`, `TABLE_ROWS`, `AVG_ROW_LENGTH`, `DATA_LENGTH`, `MAX_DATA_LENGTH`, `INDEX_LENGTH`, `DATA_FREE`, `AUTO_INCREMENT`, `CREATE_TIME`, `UPDATE_TIME`, `CHECK_TIME`, `TABLE_COLLATION`, `CHECKSUM`, `CREATE_OPTIONS`, `TABLE_COMMENT` " +
+				"FROM `information_schema`.`TABLES` WHERE `TABLE_SCHEMA` = ? ORDER BY `TABLE_NAME` ASC", databases[0])
 
 			if err != nil {
 				return err
@@ -225,7 +228,8 @@ func main() {
 				sourceTableMap[table.TableName] = table
 			}
 
-			targetTableRows, err := targetDb.Query("SELECT * FROM `information_schema`.`TABLES` WHERE `TABLE_SCHEMA` = ? ORDER BY `TABLE_NAME` ASC", databases[1])
+			targetTableRows, err := targetDb.Query("SELECT `TABLE_CATALOG`, `TABLE_SCHEMA`, `TABLE_NAME`, `TABLE_TYPE`, `ENGINE`, `VERSION`, `ROW_FORMAT`, `TABLE_ROWS`, `AVG_ROW_LENGTH`, `DATA_LENGTH`, `MAX_DATA_LENGTH`, `INDEX_LENGTH`, `DATA_FREE`, `AUTO_INCREMENT`, `CREATE_TIME`, `UPDATE_TIME`, `CHECK_TIME`, `TABLE_COLLATION`, `CHECKSUM`, `CREATE_OPTIONS`, `TABLE_COMMENT` " +
+				"FROM `information_schema`.`TABLES` WHERE `TABLE_SCHEMA` = ? ORDER BY `TABLE_NAME` ASC", databases[1])
 
 			if err != nil {
 				return err
@@ -281,7 +285,8 @@ func main() {
 			for _, sourceTable := range sourceTableData {
 				if _, ok := targetTableMap[sourceTable.TableName]; ok {
 					// ALTER TABLE ...
-					sourceColumnRows, err := sourceDb.Query("SELECT * FROM `information_schema`.`COLUMNS` WHERE `TABLE_SCHEMA` = ? AND `TABLE_NAME` = ? ORDER BY `ORDINAL_POSITION` ASC", databases[0], sourceTable.TableName)
+					sourceColumnRows, err := sourceDb.Query("SELECT `TABLE_CATALOG`, `TABLE_SCHEMA`, `TABLE_NAME`, `COLUMN_NAME`, `ORDINAL_POSITION`, `COLUMN_DEFAULT`, `IS_NULLABLE`, `DATA_TYPE`, `CHARACTER_MAXIMUM_LENGTH`, `CHARACTER_OCTET_LENGTH`, `NUMERIC_PRECISION`, `NUMERIC_SCALE`, `DATETIME_PRECISION`, `CHARACTER_SET_NAME`, `COLLATION_NAME`, `COLUMN_TYPE`, `COLUMN_KEY`, `EXTRA`, `PRIVILEGES`, `COLUMN_COMMENT`, `GENERATION_EXPRESSION` " +
+						"FROM `information_schema`.`COLUMNS` WHERE `TABLE_SCHEMA` = ? AND `TABLE_NAME` = ? ORDER BY `ORDINAL_POSITION` ASC", databases[0], sourceTable.TableName)
 
 					if err != nil {
 						return err
@@ -325,7 +330,8 @@ func main() {
 
 					sourceColumnDataLen := len(sourceColumnData)
 
-					targetColumnRows, err := targetDb.Query("SELECT * FROM `information_schema`.`COLUMNS` WHERE `TABLE_SCHEMA` = ? AND `TABLE_NAME` = ? ORDER BY `ORDINAL_POSITION` ASC", databases[1], sourceTable.TableName)
+					targetColumnRows, err := targetDb.Query("SELECT `TABLE_CATALOG`, `TABLE_SCHEMA`, `TABLE_NAME`, `COLUMN_NAME`, `ORDINAL_POSITION`, `COLUMN_DEFAULT`, `IS_NULLABLE`, `DATA_TYPE`, `CHARACTER_MAXIMUM_LENGTH`, `CHARACTER_OCTET_LENGTH`, `NUMERIC_PRECISION`, `NUMERIC_SCALE`, `DATETIME_PRECISION`, `CHARACTER_SET_NAME`, `COLLATION_NAME`, `COLUMN_TYPE`, `COLUMN_KEY`, `EXTRA`, `PRIVILEGES`, `COLUMN_COMMENT`, `GENERATION_EXPRESSION` " +
+						"FROM `information_schema`.`COLUMNS` WHERE `TABLE_SCHEMA` = ? AND `TABLE_NAME` = ? ORDER BY `ORDINAL_POSITION` ASC", databases[1], sourceTable.TableName)
 
 					if err != nil {
 						return err
@@ -618,7 +624,8 @@ func main() {
 					}
 				} else {
 					// CREATE TABLE ...
-					sourceColumnRows, err := sourceDb.Query("SELECT * FROM `information_schema`.`COLUMNS` WHERE `TABLE_SCHEMA` = ? AND `TABLE_NAME` = ? ORDER BY `ORDINAL_POSITION` ASC", databases[0], sourceTable.TableName)
+					sourceColumnRows, err := sourceDb.Query("SELECT `TABLE_CATALOG`, `TABLE_SCHEMA`, `TABLE_NAME`, `COLUMN_NAME`, `ORDINAL_POSITION`, `COLUMN_DEFAULT`, `IS_NULLABLE`, `DATA_TYPE`, `CHARACTER_MAXIMUM_LENGTH`, `CHARACTER_OCTET_LENGTH`, `NUMERIC_PRECISION`, `NUMERIC_SCALE`, `DATETIME_PRECISION`, `CHARACTER_SET_NAME`, `COLLATION_NAME`, `COLUMN_TYPE`, `COLUMN_KEY`, `EXTRA`, `PRIVILEGES`, `COLUMN_COMMENT`, `GENERATION_EXPRESSION` " +
+						"FROM `information_schema`.`COLUMNS` WHERE `TABLE_SCHEMA` = ? AND `TABLE_NAME` = ? ORDER BY `ORDINAL_POSITION` ASC", databases[0], sourceTable.TableName)
 
 					if err != nil {
 						return err
