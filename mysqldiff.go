@@ -429,13 +429,11 @@ func main() {
 							}
 
 							// MODIFY COLUMN ...
-							for columnName, sourceColumn := range sourceColumns {
+							for _, sourceColumn := range sourceColumnData {
+								columnName := sourceColumn.ColumnName
+
 								if _, ok := targetColumns[columnName]; ok {
 									if !CompareColumn(sourceColumn, targetColumns[columnName]) {
-										if sourceTable.TableName == "u_daily" && columnName == "mail_uids" {
-											fmt.Println("MODIFY", sourceTable.TableName, columnName, sourceColumn.OrdinalPosition, targetColumns[columnName].OrdinalPosition)
-										}
-
 										nullAbleDefault := GetColumnNullAbleDefault(sourceColumn)
 										var extra = ""
 
