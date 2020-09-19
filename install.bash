@@ -3,10 +3,9 @@
 go build mysqldiff.go 
 upx -qvf ./mysqldiff
 
-#/bin/cp -f ./bash_autocomplete /etc/bash_completion.d/weition-cli.bash
+/bin/cp -f ./bash_completion/mysqldiff.bash /etc/bash_completion.d/mysqldiff.bash
 
-#PROG=weition-cli
-#source /etc/bash_completion.d/weition-cli.bash
+source /etc/bash_completion.d/mysqldiff.bash
 
 echo "打包完成。"
 exit 0
