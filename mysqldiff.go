@@ -449,7 +449,8 @@ func main() {
 					}
 
 					// ADD KEY AND DROP INDEX ...
-					sourceStatisticsRows, err := sourceDb.Query("SELECT * FROM `information_schema`.`STATISTICS` WHERE `TABLE_SCHEMA` = ? AND `TABLE_NAME` = ?", databases[0], sourceTable.TableName)
+					sourceStatisticsRows, err := sourceDb.Query("SELECT `TABLE_CATALOG`, `TABLE_SCHEMA`, `TABLE_NAME`, `NON_UNIQUE`, `INDEX_SCHEMA`, `INDEX_NAME`, `SEQ_IN_INDEX`, `COLUMN_NAME`, `COLLATION`, `CARDINALITY`, `SUB_PART`, `PACKED`, `NULLABLE`, `INDEX_TYPE`, `COMMENT`, `INDEX_COMMENT` " +
+						"FROM `information_schema`.`STATISTICS` WHERE `TABLE_SCHEMA` = ? AND `TABLE_NAME` = ?", databases[0], sourceTable.TableName)
 
 					if err != nil {
 						return err
@@ -477,7 +478,6 @@ func main() {
 							&statistic.IndexType,
 							&statistic.COMMENT,
 							&statistic.IndexComment,
-							&statistic.IsVisible,
 						)
 
 						if err != nil {
@@ -487,7 +487,8 @@ func main() {
 						sourceStatisticsData = append(sourceStatisticsData, statistic)
 					}
 
-					targetStatisticsRows, err := targetDb.Query("SELECT * FROM `information_schema`.`STATISTICS` WHERE `TABLE_SCHEMA` = ? AND `TABLE_NAME` = ?", databases[1], sourceTable.TableName)
+					targetStatisticsRows, err := targetDb.Query("SELECT `TABLE_CATALOG`, `TABLE_SCHEMA`, `TABLE_NAME`, `NON_UNIQUE`, `INDEX_SCHEMA`, `INDEX_NAME`, `SEQ_IN_INDEX`, `COLUMN_NAME`, `COLLATION`, `CARDINALITY`, `SUB_PART`, `PACKED`, `NULLABLE`, `INDEX_TYPE`, `COMMENT`, `INDEX_COMMENT` " +
+						"FROM `information_schema`.`STATISTICS` WHERE `TABLE_SCHEMA` = ? AND `TABLE_NAME` = ?", databases[1], sourceTable.TableName)
 
 					if err != nil {
 						return err
@@ -515,7 +516,6 @@ func main() {
 							&statistic.IndexType,
 							&statistic.COMMENT,
 							&statistic.IndexComment,
-							&statistic.IsVisible,
 						)
 
 						if err != nil {
@@ -663,7 +663,8 @@ func main() {
 					sourceColumnDataLen := len(sourceColumnData)
 
 					if sourceColumnDataLen > 0 {
-						sourceStatisticsRows, err := sourceDb.Query("SELECT * FROM `information_schema`.`STATISTICS` WHERE `TABLE_SCHEMA` = ? AND `TABLE_NAME` = ?", databases[0], sourceTable.TableName)
+						sourceStatisticsRows, err := sourceDb.Query("SELECT `TABLE_CATALOG`, `TABLE_SCHEMA`, `TABLE_NAME`, `NON_UNIQUE`, `INDEX_SCHEMA`, `INDEX_NAME`, `SEQ_IN_INDEX`, `COLUMN_NAME`, `COLLATION`, `CARDINALITY`, `SUB_PART`, `PACKED`, `NULLABLE`, `INDEX_TYPE`, `COMMENT`, `INDEX_COMMENT` " +
+							"FROM `information_schema`.`STATISTICS` WHERE `TABLE_SCHEMA` = ? AND `TABLE_NAME` = ?", databases[0], sourceTable.TableName)
 
 						if err != nil {
 							return err
@@ -691,7 +692,6 @@ func main() {
 								&statistic.IndexType,
 								&statistic.COMMENT,
 								&statistic.IndexComment,
-								&statistic.IsVisible,
 							)
 
 							if err != nil {
