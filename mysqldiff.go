@@ -404,6 +404,8 @@ func main() {
 							// DROP COLUMN ...
 							for _, targetColumn := range targetColumns {
 								if _, ok := sourceColumns[targetColumn.ColumnName]; !ok {
+									ResetCalcPosition(targetColumn.ColumnName, targetColumn.OrdinalPosition, targetColumns, 3)
+
 									alterColumnSql = append(alterColumnSql, fmt.Sprintf("  DROP COLUMN `%s`", targetColumn.ColumnName))
 								}
 							}
@@ -422,10 +424,14 @@ func main() {
 
 									after := GetColumnAfter(sourceColumn.OrdinalPosition, sourceColumnsPos)
 
-									ResetCalcPosition(columnName, sourceColumn.OrdinalPosition, targetColumns, false)
+									ResetCalcPosition(columnName, sourceColumn.OrdinalPosition, targetColumns, 1)
 
 									alterColumnSql = append(alterColumnSql, fmt.Sprintf("  ADD COLUMN `%s` %s%s%s %s", columnName, sourceColumn.ColumnType, nullAbleDefault, extra, after))
 								}
+							}
+
+							if sourceTable.TableName == "u_cross_guild_war_x_member" {
+								fmt.Println(targetColumns["score"])
 							}
 
 							// MODIFY COLUMN ...
@@ -443,7 +449,7 @@ func main() {
 
 										after := GetColumnAfter(sourceColumn.OrdinalPosition, sourceColumnsPos)
 
-										ResetCalcPosition(columnName, sourceColumn.OrdinalPosition, targetColumns, true)
+										ResetCalcPosition(columnName, sourceColumn.OrdinalPosition, targetColumns, 2)
 
 										alterColumnSql = append(alterColumnSql, fmt.Sprintf("  MODIFY COLUMN `%s` %s%s%s %s", columnName, sourceColumn.ColumnType, nullAbleDefault, extra, after))
 									}
@@ -1029,17 +1035,9 @@ func CompareStatistic(sourceStatistic Statistic, targetStatistic Statistic) bool
 	return true
 }
 
-func ResetCalcPosition(columnName string, sourcePos int, targetColumns map[string]Column, isModify bool) {
-	if isModify {
-		// MODIFY ...
-		if _, ok := targetColumns[columnName]; ok {
-			targetColumn := targetColumns[columnName]
-
-			targetColumn.OrdinalPosition = sourcePos
-
-			targetColumns[columnName] = targetColumn
-		}
-	} else {
+func ResetCalcPosition(columnName string, sourcePos int, targetColumns map[string]Column, status int) {
+	switch status {
+	case 1:
 		// ADD ...
 		for targetColumnName, targetColumn := range targetColumns {
 			if targetColumn.OrdinalPosition >= sourcePos {
@@ -1048,6 +1046,27 @@ func ResetCalcPosition(columnName string, sourcePos int, targetColumns map[strin
 				targetColumns[targetColumnName] = targetColumn
 			}
 		}
+		break
+	case 2:
+		// MODIFY ...
+		if _, ok := targetColumns[columnName]; ok {
+			targetColumn := targetColumns[columnName]
+
+			targetColumn.OrdinalPosition = sourcePos
+
+			targetColumns[columnName] = targetColumn
+		}
+		break
+	case 3:
+		// DROP ...
+		for targetColumnName, targetColumn := range targetColumns {
+			if targetColumn.OrdinalPosition >= sourcePos {
+				targetColumn.OrdinalPosition -= 1
+
+				targetColumns[targetColumnName] = targetColumn
+			}
+		}
+		break
 	}
 }
 
