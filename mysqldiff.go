@@ -430,10 +430,6 @@ func main() {
 								}
 							}
 
-							if sourceTable.TableName == "u_cross_guild_war_x_member" {
-								fmt.Println(targetColumns["score"])
-							}
-
 							// MODIFY COLUMN ...
 							for _, sourceColumn := range sourceColumnData {
 								columnName := sourceColumn.ColumnName
