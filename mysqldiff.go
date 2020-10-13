@@ -922,10 +922,6 @@ func CompareColumn(sourceColumn Column, targetColumn Column) bool {
 		return false
 	}
 
-	if sourceColumn.CharacterOctetLength != targetColumn.CharacterOctetLength {
-		return false
-	}
-
 	if sourceColumn.NumericPrecision != targetColumn.NumericPrecision {
 		return false
 	}
