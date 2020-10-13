@@ -922,6 +922,7 @@ func CompareColumn(sourceColumn Column, targetColumn Column) bool {
 		return false
 	}
 
+	//禁用实际精度检验，因为 TiDB 和 MySQL 在设置不标准的情况下，值会不一样。
 	//if sourceColumn.NumericPrecision != targetColumn.NumericPrecision {
 	//	return false
 	//}
