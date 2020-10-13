@@ -922,9 +922,9 @@ func CompareColumn(sourceColumn Column, targetColumn Column) bool {
 		return false
 	}
 
-	if sourceColumn.NumericPrecision != targetColumn.NumericPrecision {
-		return false
-	}
+	//if sourceColumn.NumericPrecision != targetColumn.NumericPrecision {
+	//	return false
+	//}
 
 	if sourceColumn.NumericScale != targetColumn.NumericScale {
 		return false
