@@ -63,7 +63,6 @@ type Column struct {
 	EXTRA                  string
 	PRIVILEGES             string
 	ColumnComment          string
-	GenerationExpression   string
 }
 
 type Statistic struct {
@@ -285,7 +284,7 @@ func main() {
 			for _, sourceTable := range sourceTableData {
 				if _, ok := targetTableMap[sourceTable.TableName]; ok {
 					// ALTER TABLE ...
-					sourceColumnRows, err := sourceDb.Query("SELECT `TABLE_CATALOG`, `TABLE_SCHEMA`, `TABLE_NAME`, `COLUMN_NAME`, `ORDINAL_POSITION`, `COLUMN_DEFAULT`, `IS_NULLABLE`, `DATA_TYPE`, `CHARACTER_MAXIMUM_LENGTH`, `CHARACTER_OCTET_LENGTH`, `NUMERIC_PRECISION`, `NUMERIC_SCALE`, `DATETIME_PRECISION`, `CHARACTER_SET_NAME`, `COLLATION_NAME`, `COLUMN_TYPE`, `COLUMN_KEY`, `EXTRA`, `PRIVILEGES`, `COLUMN_COMMENT`, `GENERATION_EXPRESSION` "+
+					sourceColumnRows, err := sourceDb.Query("SELECT `TABLE_CATALOG`, `TABLE_SCHEMA`, `TABLE_NAME`, `COLUMN_NAME`, `ORDINAL_POSITION`, `COLUMN_DEFAULT`, `IS_NULLABLE`, `DATA_TYPE`, `CHARACTER_MAXIMUM_LENGTH`, `CHARACTER_OCTET_LENGTH`, `NUMERIC_PRECISION`, `NUMERIC_SCALE`, `DATETIME_PRECISION`, `CHARACTER_SET_NAME`, `COLLATION_NAME`, `COLUMN_TYPE`, `COLUMN_KEY`, `EXTRA`, `PRIVILEGES`, `COLUMN_COMMENT` "+
 						"FROM `information_schema`.`COLUMNS` WHERE `TABLE_SCHEMA` = ? AND `TABLE_NAME` = ? ORDER BY `ORDINAL_POSITION` ASC", databases[0], sourceTable.TableName)
 
 					if err != nil {
@@ -318,7 +317,6 @@ func main() {
 							&column.EXTRA,
 							&column.PRIVILEGES,
 							&column.ColumnComment,
-							&column.GenerationExpression,
 						)
 
 						if err != nil {
@@ -330,7 +328,7 @@ func main() {
 
 					sourceColumnDataLen := len(sourceColumnData)
 
-					targetColumnRows, err := targetDb.Query("SELECT `TABLE_CATALOG`, `TABLE_SCHEMA`, `TABLE_NAME`, `COLUMN_NAME`, `ORDINAL_POSITION`, `COLUMN_DEFAULT`, `IS_NULLABLE`, `DATA_TYPE`, `CHARACTER_MAXIMUM_LENGTH`, `CHARACTER_OCTET_LENGTH`, `NUMERIC_PRECISION`, `NUMERIC_SCALE`, `DATETIME_PRECISION`, `CHARACTER_SET_NAME`, `COLLATION_NAME`, `COLUMN_TYPE`, `COLUMN_KEY`, `EXTRA`, `PRIVILEGES`, `COLUMN_COMMENT`, `GENERATION_EXPRESSION` "+
+					targetColumnRows, err := targetDb.Query("SELECT `TABLE_CATALOG`, `TABLE_SCHEMA`, `TABLE_NAME`, `COLUMN_NAME`, `ORDINAL_POSITION`, `COLUMN_DEFAULT`, `IS_NULLABLE`, `DATA_TYPE`, `CHARACTER_MAXIMUM_LENGTH`, `CHARACTER_OCTET_LENGTH`, `NUMERIC_PRECISION`, `NUMERIC_SCALE`, `DATETIME_PRECISION`, `CHARACTER_SET_NAME`, `COLLATION_NAME`, `COLUMN_TYPE`, `COLUMN_KEY`, `EXTRA`, `PRIVILEGES`, `COLUMN_COMMENT` "+
 						"FROM `information_schema`.`COLUMNS` WHERE `TABLE_SCHEMA` = ? AND `TABLE_NAME` = ? ORDER BY `ORDINAL_POSITION` ASC", databases[1], sourceTable.TableName)
 
 					if err != nil {
@@ -363,7 +361,6 @@ func main() {
 							&column.EXTRA,
 							&column.PRIVILEGES,
 							&column.ColumnComment,
-							&column.GenerationExpression,
 						)
 
 						if err != nil {
@@ -624,7 +621,7 @@ func main() {
 					}
 				} else {
 					// CREATE TABLE ...
-					sourceColumnRows, err := sourceDb.Query("SELECT `TABLE_CATALOG`, `TABLE_SCHEMA`, `TABLE_NAME`, `COLUMN_NAME`, `ORDINAL_POSITION`, `COLUMN_DEFAULT`, `IS_NULLABLE`, `DATA_TYPE`, `CHARACTER_MAXIMUM_LENGTH`, `CHARACTER_OCTET_LENGTH`, `NUMERIC_PRECISION`, `NUMERIC_SCALE`, `DATETIME_PRECISION`, `CHARACTER_SET_NAME`, `COLLATION_NAME`, `COLUMN_TYPE`, `COLUMN_KEY`, `EXTRA`, `PRIVILEGES`, `COLUMN_COMMENT`, `GENERATION_EXPRESSION` "+
+					sourceColumnRows, err := sourceDb.Query("SELECT `TABLE_CATALOG`, `TABLE_SCHEMA`, `TABLE_NAME`, `COLUMN_NAME`, `ORDINAL_POSITION`, `COLUMN_DEFAULT`, `IS_NULLABLE`, `DATA_TYPE`, `CHARACTER_MAXIMUM_LENGTH`, `CHARACTER_OCTET_LENGTH`, `NUMERIC_PRECISION`, `NUMERIC_SCALE`, `DATETIME_PRECISION`, `CHARACTER_SET_NAME`, `COLLATION_NAME`, `COLUMN_TYPE`, `COLUMN_KEY`, `EXTRA`, `PRIVILEGES`, `COLUMN_COMMENT` "+
 						"FROM `information_schema`.`COLUMNS` WHERE `TABLE_SCHEMA` = ? AND `TABLE_NAME` = ? ORDER BY `ORDINAL_POSITION` ASC", databases[0], sourceTable.TableName)
 
 					if err != nil {
@@ -657,7 +654,6 @@ func main() {
 							&column.EXTRA,
 							&column.PRIVILEGES,
 							&column.ColumnComment,
-							&column.GenerationExpression,
 						)
 
 						sourceColumnData = append(sourceColumnData, column)
