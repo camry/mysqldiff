@@ -413,7 +413,16 @@ func main() {
 
 								if _, ok := targetColumns[columnName]; !ok {
 									nullAbleDefault := GetColumnNullAbleDefault(sourceColumn)
-									var extra = ""
+									var (
+										character = ""
+										extra     = ""
+									)
+
+									if sourceColumn.CharacterSetName.Valid {
+										if sourceColumn.CharacterSetName.String != sourceSchema.DefaultCharacterSetName {
+											character = fmt.Sprintf(" CHARACTER SET %s", sourceColumn.CharacterSetName.String)
+										}
+									}
 
 									if sourceColumn.EXTRA != "" {
 										extra = fmt.Sprintf(" %s", strings.ToUpper(sourceColumn.EXTRA))
@@ -423,7 +432,7 @@ func main() {
 
 									ResetCalcPosition(columnName, sourceColumn.OrdinalPosition, targetColumns, 1)
 
-									alterColumnSql = append(alterColumnSql, fmt.Sprintf("  ADD COLUMN `%s` %s%s%s %s", columnName, sourceColumn.ColumnType, nullAbleDefault, extra, after))
+									alterColumnSql = append(alterColumnSql, fmt.Sprintf("  ADD COLUMN `%s` %s%s%s%s %s", columnName, sourceColumn.ColumnType, character, nullAbleDefault, extra, after))
 								}
 							}
 
@@ -434,7 +443,17 @@ func main() {
 								if _, ok := targetColumns[columnName]; ok {
 									if !CompareColumn(sourceColumn, targetColumns[columnName]) {
 										nullAbleDefault := GetColumnNullAbleDefault(sourceColumn)
-										var extra = ""
+
+										var (
+											character = ""
+											extra     = ""
+										)
+
+										if sourceColumn.CharacterSetName.Valid {
+											if sourceColumn.CharacterSetName.String != sourceSchema.DefaultCharacterSetName {
+												character = fmt.Sprintf(" CHARACTER SET %s", sourceColumn.CharacterSetName.String)
+											}
+										}
 
 										if sourceColumn.EXTRA != "" {
 											extra = fmt.Sprintf(" %s", strings.ToUpper(sourceColumn.EXTRA))
@@ -444,7 +463,7 @@ func main() {
 
 										ResetCalcPosition(columnName, sourceColumn.OrdinalPosition, targetColumns, 2)
 
-										alterColumnSql = append(alterColumnSql, fmt.Sprintf("  MODIFY COLUMN `%s` %s%s%s %s", columnName, sourceColumn.ColumnType, nullAbleDefault, extra, after))
+										alterColumnSql = append(alterColumnSql, fmt.Sprintf("  MODIFY COLUMN `%s` %s%s%s%s %s", columnName, sourceColumn.ColumnType, character, nullAbleDefault, extra, after))
 									}
 								}
 							}
@@ -713,9 +732,16 @@ func main() {
 						// COLUMNS ...
 						for _, sourceColumn := range sourceColumnData {
 							var (
-								extra = ""
-								dot   = ""
+								character = ""
+								extra     = ""
+								dot       = ""
 							)
+
+							if sourceColumn.CharacterSetName.Valid {
+								if sourceColumn.CharacterSetName.String != sourceSchema.DefaultCharacterSetName {
+									character = fmt.Sprintf(" CHARACTER SET %s", sourceColumn.CharacterSetName.String)
+								}
+							}
 
 							if sourceColumn.EXTRA != "" {
 								extra = fmt.Sprintf(" %s", strings.ToUpper(sourceColumn.EXTRA))
@@ -725,7 +751,7 @@ func main() {
 								dot = ","
 							}
 
-							createTableSql = append(createTableSql, fmt.Sprintf("  `%s` %s%s%s%s", sourceColumn.ColumnName, sourceColumn.ColumnType, GetColumnNullAbleDefault(sourceColumn), extra, dot))
+							createTableSql = append(createTableSql, fmt.Sprintf("  `%s` %s%s%s%s%s", sourceColumn.ColumnName, sourceColumn.ColumnType, character, GetColumnNullAbleDefault(sourceColumn), extra, dot))
 
 							//fmt.Println(sourceColumn.ColumnName)
 						}
