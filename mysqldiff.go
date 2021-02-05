@@ -815,7 +815,7 @@ func GetColumnNullAbleDefault(column Column) string {
 
 	if column.IsNullable == "NO" {
 		if column.ColumnDefault.Valid {
-			if column.ColumnDefault.String == "CURRENT_TIMESTAMP" {
+			if column.DataType == "timestamp" {
 				nullAbleDefault = fmt.Sprintf(" NOT NULL DEFAULT %s", column.ColumnDefault.String)
 			} else {
 				nullAbleDefault = fmt.Sprintf(" NOT NULL DEFAULT '%s'", column.ColumnDefault.String)
@@ -825,7 +825,7 @@ func GetColumnNullAbleDefault(column Column) string {
 		}
 	} else {
 		if column.ColumnDefault.Valid {
-			if column.ColumnDefault.String == "CURRENT_TIMESTAMP" {
+			if column.DataType == "timestamp" {
 				nullAbleDefault = fmt.Sprintf(" NULL DEFAULT %s", column.ColumnDefault.String)
 			} else {
 				nullAbleDefault = fmt.Sprintf(" DEFAULT '%s'", column.ColumnDefault.String)
