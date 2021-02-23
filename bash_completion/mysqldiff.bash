@@ -15,4 +15,4 @@ _cli_bash_autocomplete() {
   fi
 }
 
-complete -o bashdefault -A file -F _cli_bash_autocomplete mysqldiff
+complete -o bashdefault -o default -F _cli_bash_autocomplete mysqldiff
