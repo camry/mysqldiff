@@ -89,7 +89,7 @@ func main() {
 	app := &cli.App{
 		Name:    "mysqldiff",
 		Usage:   "差异 SQL 工具。",
-		Version: "v1.0.2",
+		Version: "v1.0.3",
 		Flags: []cli.Flag{
 			&cli.StringFlag{Name: "source", Usage: "指定源服务器。(格式: <user>:<password>@<host>:<port>)", Required: true},
 			&cli.StringFlag{Name: "target", Usage: "指定目标服务器。(格式: <user>:<password>@<host>:<port>)"},
