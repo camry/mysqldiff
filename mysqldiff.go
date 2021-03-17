@@ -426,7 +426,7 @@ func main() {
 									}
 
 									if sourceColumn.EXTRA != "" {
-										extra = fmt.Sprintf(" %s", strings.ToUpper(sourceColumn.EXTRA))
+										extra = fmt.Sprintf(" %s", strings.Replace(strings.ToUpper(sourceColumn.EXTRA), "DEFAULT_GENERATED", "", 1))
 									}
 
 									after := GetColumnAfter(sourceColumn.OrdinalPosition, sourceColumnsPos)
@@ -457,7 +457,7 @@ func main() {
 										}
 
 										if sourceColumn.EXTRA != "" {
-											extra = fmt.Sprintf(" %s", strings.ToUpper(sourceColumn.EXTRA))
+											extra = fmt.Sprintf(" %s", strings.Replace(strings.ToUpper(sourceColumn.EXTRA), "DEFAULT_GENERATED", "", 1))
 										}
 
 										after := GetColumnAfter(sourceColumn.OrdinalPosition, sourceColumnsPos)
@@ -745,7 +745,7 @@ func main() {
 							}
 
 							if sourceColumn.EXTRA != "" {
-								extra = fmt.Sprintf(" %s", strings.ToUpper(sourceColumn.EXTRA))
+								extra = fmt.Sprintf(" %s", strings.Replace(strings.ToUpper(sourceColumn.EXTRA), "DEFAULT_GENERATED", "", 1))
 							}
 
 							if sourceColumn != sourceColumnData[sourceColumnDataLen-1] || len(sourceStatisticsData) > 0 {
