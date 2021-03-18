@@ -103,8 +103,9 @@ var (
 	db     string
 
 	rootCmd = &cobra.Command{
-		Use:   "mysqldiff",
-		Short: "差异 SQL 工具。",
+		Use:     "mysqldiff",
+		Short:   "差异 SQL 工具。",
+		Version: "v1.0.0",
 		Run: func(cmd *cobra.Command, args []string) {
 			var (
 				dns        = "%s:%s@tcp(%s:%d)/information_schema?parseTime=true&charset=%s"
