@@ -12,13 +12,13 @@ var completionCmd = &cobra.Command{
 
 Bash:
 
-  $ source <(game-cli completion bash)
+  $ source <(mysqldiff completion bash)
 
   # To load completions for each session, execute once:
   # Linux:
-  $ game-cli completion bash > /etc/bash_completion.d/game-cli && source /etc/bash_completion.d/game-cli
+  $ mysqldiff completion bash > /etc/bash_completion.d/mysqldiff && source /etc/bash_completion.d/mysqldiff
   # macOS:
-  $ game-cli completion bash > /usr/local/etc/bash_completion.d/game-cli
+  $ mysqldiff completion bash > /usr/local/etc/bash_completion.d/mysqldiff
 
 Zsh:
 
@@ -28,23 +28,23 @@ Zsh:
   $ echo "autoload -U compinit; compinit" >> ~/.zshrc
 
   # To load completions for each session, execute once:
-  $ game-cli completion zsh > "${fpath[1]}/_game-cli"
+  $ mysqldiff completion zsh > "${fpath[1]}/_mysqldiff"
 
   # You will need to start a new shell for this setup to take effect.
 
 fish:
 
-  $ game-cli completion fish | source
+  $ mysqldiff completion fish | source
 
   # To load completions for each session, execute once:
-  $ game-cli completion fish > ~/.config/fish/completions/game-cli.fish
+  $ mysqldiff completion fish > ~/.config/fish/completions/mysqldiff.fish
 
 PowerShell:
 
-  PS> game-cli completion powershell | Out-String | Invoke-Expression
+  PS> mysqldiff completion powershell | Out-String | Invoke-Expression
 
   # To load completions for every new session, run:
-  PS> game-cli completion powershell > game-cli.ps1
+  PS> mysqldiff completion powershell > mysqldiff.ps1
   # and source this file from your PowerShell profile.
 `,
 	DisableFlagsInUseLine: true,
