@@ -108,7 +108,7 @@ var (
 		Version: "v1.0.0",
 		Run: func(cmd *cobra.Command, args []string) {
 			var (
-				dns        = "%s:%s@tcp(%s:%d)/information_schema?parseTime=true&charset=%s"
+				dns        = "%s:%s@tcp(%s:%d)/information_schema?timeout=10s&parseTime=true&charset=%s"
 				sourceUser = strings.Split(source[0:strings.LastIndex(source, "@")], ":")
 				sourceHost = strings.Split(source[strings.LastIndex(source, "@")+1:], ":")
 				databases  = strings.Split(db, ":")
@@ -141,7 +141,7 @@ var (
 			}), &gorm.Config{
 				SkipDefaultTransaction: true,
 				DisableAutomaticPing:   true,
-				Logger:                 logger.Default.LogMode(logger.Error),
+				Logger:                 logger.Default.LogMode(logger.Silent),
 			})
 
 			cobra.CheckErr(err)
@@ -167,7 +167,7 @@ var (
 				}), &gorm.Config{
 					SkipDefaultTransaction: true,
 					DisableAutomaticPing:   true,
-					Logger:                 logger.Default.LogMode(logger.Error),
+					Logger:                 logger.Default.LogMode(logger.Silent),
 				})
 
 				cobra.CheckErr(err)
