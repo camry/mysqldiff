@@ -138,7 +138,11 @@ var (
 					sourceDbConfig.Host, sourceDbConfig.Port,
 					sourceDbConfig.Charset,
 				),
-			}), &gorm.Config{SkipDefaultTransaction: true, Logger: logger.Default.LogMode(logger.Error)})
+			}), &gorm.Config{
+				SkipDefaultTransaction: true,
+				DisableAutomaticPing:   true,
+				Logger:                 logger.Default.LogMode(logger.Error),
+			})
 
 			cobra.CheckErr(err)
 
@@ -160,7 +164,11 @@ var (
 						targetDbConfig.Host, targetDbConfig.Port,
 						targetDbConfig.Charset,
 					),
-				}), &gorm.Config{SkipDefaultTransaction: true, Logger: logger.Default.LogMode(logger.Error)})
+				}), &gorm.Config{
+					SkipDefaultTransaction: true,
+					DisableAutomaticPing:   true,
+					Logger:                 logger.Default.LogMode(logger.Error),
+				})
 
 				cobra.CheckErr(err)
 			}
