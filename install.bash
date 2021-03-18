@@ -3,9 +3,7 @@
 go build mysqldiff.go 
 upx -qvf ./mysqldiff
 
-/bin/cp -f ./bash_completion/mysqldiff.bash /etc/bash_completion.d/mysqldiff.bash
-
-source /etc/bash_completion.d/mysqldiff.bash
+mysqldiff completion bash > /etc/bash_completion.d/mysqldiff && source /etc/bash_completion.d/mysqldiff
 
 echo "打包完成。"
 exit 0
