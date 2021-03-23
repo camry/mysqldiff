@@ -100,7 +100,7 @@ type Statistic struct {
 
 const (
 	Dsn         = "%s:%s@tcp(%s:%d)/information_schema?timeout=10s&parseTime=true&charset=%s"
-	HostPattern = "^(.*)\\:(.*)\\@((\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3}))\\:(\\d+)$"
+	HostPattern = "^(.*)\\:(.*)\\@(.*)\\:(\\d+)$"
 	DbPattern   = "^([A-Za-z0-9_]+)\\:([A-Za-z0-9_]+)$"
 )
 
@@ -132,7 +132,7 @@ var (
 	rootCmd = &cobra.Command{
 		Use:     "mysqldiff",
 		Short:   "差异 SQL 工具。",
-		Version: "v1.0.0",
+		Version: "v1.0.1",
 		Run: func(cmd *cobra.Command, args []string) {
 			sourceMatched, err1 := regexp.MatchString(HostPattern, source)
 			dbMatched, err3 := regexp.MatchString(DbPattern, db)
