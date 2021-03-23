@@ -568,8 +568,8 @@ var (
 
 			// Print Sql...
 			if len(diffSql) > 0 {
-				cmd.Println(fmt.Sprintf("SET NAMES %s;\n", sourceSchema.DefaultCharacterSetName))
-				cmd.Println(strings.Join(diffSql, "\n\n"))
+				fmt.Println(fmt.Sprintf("SET NAMES %s;\n", sourceSchema.DefaultCharacterSetName))
+				fmt.Println(strings.Join(diffSql, "\n\n"))
 			}
 		},
 	}
