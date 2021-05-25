@@ -447,7 +447,7 @@ var (
                                 }
 
                                 // DROP INDEX ...
-                                for targetIndexName, _ := range targetStatisticsDataMap {
+                                for targetIndexName := range targetStatisticsDataMap {
                                     if _, ok := sourceStatisticsDataMap[targetIndexName]; !ok {
                                         if "PRIMARY" == targetIndexName {
                                             alterKeySql = append(alterKeySql, "  DROP PRIMARY KEY")
@@ -668,7 +668,7 @@ func GetAddKeys(indexName string, statisticMap map[int]Statistic) string {
         var seqInIndexSort []int
         var columnNames []string
 
-        for seqInIndex, _ := range statisticMap {
+        for seqInIndex := range statisticMap {
             seqInIndexSort = append(seqInIndexSort, seqInIndex)
         }
 
@@ -690,7 +690,7 @@ func GetAddKeys(indexName string, statisticMap map[int]Statistic) string {
             var seqInIndexSort []int
             var columnNames []string
 
-            for seqInIndex, _ := range statisticMap {
+            for seqInIndex := range statisticMap {
                 seqInIndexSort = append(seqInIndexSort, seqInIndex)
             }
 
@@ -711,7 +711,7 @@ func GetAddKeys(indexName string, statisticMap map[int]Statistic) string {
             var seqInIndexSort []int
             var columnNames []string
 
-            for seqInIndex, _ := range statisticMap {
+            for seqInIndex := range statisticMap {
                 seqInIndexSort = append(seqInIndexSort, seqInIndex)
             }
 
