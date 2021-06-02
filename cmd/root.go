@@ -139,12 +139,13 @@ func initConfig() {
 }
 
 var (
-	wg      sync.WaitGroup
-	lock    sync.Mutex
-	source  string
-	target  string
-	db      string
-	diffSql []string
+	wg          sync.WaitGroup
+	lock        sync.Mutex
+	source      string
+	target      string
+	db          string
+	diffSqlKeys []string
+	diffSqlMap  = make(map[string]string)
 
 	rootCmd = &cobra.Command{
 		Use:     "mysqldiff",
@@ -292,9 +293,11 @@ var (
 				if _, ok := sourceTableMap[targetTable.TableName]; !ok {
 					switch targetTable.TableType {
 					case "BASE TABLE":
-						diffSql = append(diffSql, fmt.Sprintf("DROP TABLE IF EXISTS `%s`;", targetTable.TableName))
+						diffSqlKeys = append(diffSqlKeys, targetTable.TableName)
+						diffSqlMap[targetTable.TableName] = fmt.Sprintf("DROP TABLE IF EXISTS `%s`;", targetTable.TableName)
 					case "VIEW":
-						diffSql = append(diffSql, fmt.Sprintf("DROP VIEW IF EXISTS `%s`;", targetTable.TableName))
+						diffSqlKeys = append(diffSqlKeys, targetTable.TableName)
+						diffSqlMap[targetTable.TableName] = fmt.Sprintf("DROP VIEW IF EXISTS `%s`;", targetTable.TableName)
 					}
 				}
 			}
@@ -307,9 +310,21 @@ var (
 			wg.Wait()
 
 			// Print Sql...
-			if len(diffSql) > 0 {
+			if len(diffSqlKeys) > 0 && len(diffSqlMap) > 0 {
 				fmt.Println(fmt.Sprintf("SET NAMES %s;\n", sourceSchema.DefaultCharacterSetName))
-				fmt.Println(strings.Join(diffSql, "\n\n"))
+
+				sort.Strings(diffSqlKeys)
+
+				for k, diffSqlKey := range diffSqlKeys {
+					if diffSql, ok := diffSqlMap[diffSqlKey]; ok {
+						if k < len(diffSqlKeys)-1 {
+							fmt.Println(diffSql)
+							fmt.Println()
+						} else {
+							fmt.Println(diffSql)
+						}
+					}
+				}
 			}
 		},
 	}
@@ -526,7 +541,8 @@ func diff(sourceDbConfig DbConfig, targetDbConfig DbConfig, sourceDb *gorm.DB, t
 			if alterTableSqlLen > 0 {
 				lock.Lock()
 
-				diffSql = append(diffSql, strings.Join(alterTableSql, "\n"))
+				diffSqlKeys = append(diffSqlKeys, sourceTable.TableName)
+				diffSqlMap[sourceTable.TableName] = strings.Join(alterTableSql, "\n")
 
 				lock.Unlock()
 			}
@@ -607,7 +623,8 @@ func diff(sourceDbConfig DbConfig, targetDbConfig DbConfig, sourceDb *gorm.DB, t
 
 				lock.Lock()
 
-				diffSql = append(diffSql, strings.Join(createTableSql, "\n"))
+				diffSqlKeys = append(diffSqlKeys, sourceTable.TableName)
+				diffSqlMap[sourceTable.TableName] = strings.Join(createTableSql, "\n")
 
 				lock.Unlock()
 			}
@@ -637,14 +654,14 @@ func diff(sourceDbConfig DbConfig, targetDbConfig DbConfig, sourceDb *gorm.DB, t
 			targetView.ViewDefinition = strings.Replace(targetView.ViewDefinition, fmt.Sprintf("`%s`.", targetDbConfig.Database), "", -1)
 
 			if sourceView.ViewDefinition != targetView.ViewDefinition {
-
 				lock.Lock()
 
-				diffSql = append(diffSql, fmt.Sprintf("CREATE OR REPLACE ALGORITHM = UNDEFINED SQL SECURITY %s VIEW `%s` AS %s;",
+				diffSqlKeys = append(diffSqlKeys, sourceTable.TableName)
+				diffSqlMap[sourceTable.TableName] = fmt.Sprintf("CREATE OR REPLACE ALGORITHM = UNDEFINED SQL SECURITY %s VIEW `%s` AS %s;",
 					sourceView.SecurityType,
 					sourceView.TableName,
 					sourceView.ViewDefinition,
-				))
+				)
 
 				lock.Unlock()
 			}
@@ -652,11 +669,12 @@ func diff(sourceDbConfig DbConfig, targetDbConfig DbConfig, sourceDb *gorm.DB, t
 			lock.Lock()
 
 			// CREATE ...
-			diffSql = append(diffSql, fmt.Sprintf("CREATE ALGORITHM = UNDEFINED SQL SECURITY %s VIEW `%s` AS %s;",
+			diffSqlKeys = append(diffSqlKeys, sourceTable.TableName)
+			diffSqlMap[sourceTable.TableName] = fmt.Sprintf("CREATE ALGORITHM = UNDEFINED SQL SECURITY %s VIEW `%s` AS %s;",
 				sourceView.SecurityType,
 				sourceView.TableName,
 				sourceView.ViewDefinition,
-			))
+			)
 
 			lock.Unlock()
 		}
