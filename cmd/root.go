@@ -397,9 +397,9 @@ func diff(sourceDbConfig DbConfig, targetDbConfig DbConfig, sourceDb *gorm.DB, t
 							alterColumnSql = append(alterColumnSql, fmt.Sprintf(
 								"  ADD COLUMN `%s` %s%s%s%s %s",
 								sourceColumn.ColumnName, sourceColumn.ColumnType,
-								getCharacterSet(&sourceColumn, &sourceSchema),
-								getColumnNullAbleDefault(&sourceColumn),
-								getColumnExtra(&sourceColumn),
+								getCharacterSet(sourceColumn, sourceSchema),
+								getColumnNullAbleDefault(sourceColumn),
+								getColumnExtra(sourceColumn),
 								getColumnAfter(sourceColumn.OrdinalPosition, sourceColumnsPos),
 							))
 
@@ -414,13 +414,13 @@ func diff(sourceDbConfig DbConfig, targetDbConfig DbConfig, sourceDb *gorm.DB, t
 						if _, ok := targetColumns[columnName]; ok {
 							targetColumn := targetColumns[columnName]
 
-							if !compareColumn(&sourceColumn, &targetColumn) {
+							if !compareColumn(sourceColumn, targetColumn) {
 								alterColumnSql = append(alterColumnSql,
 									fmt.Sprintf("  MODIFY COLUMN `%s` %s%s%s%s %s",
 										columnName, sourceColumn.ColumnType,
-										getCharacterSet(&sourceColumn, &sourceSchema),
-										getColumnNullAbleDefault(&sourceColumn),
-										getColumnExtra(&sourceColumn),
+										getCharacterSet(sourceColumn, sourceSchema),
+										getColumnNullAbleDefault(sourceColumn),
+										getColumnExtra(sourceColumn),
 										getColumnAfter(sourceColumn.OrdinalPosition, sourceColumnsPos),
 									),
 								)
@@ -585,9 +585,9 @@ func diff(sourceDbConfig DbConfig, targetDbConfig DbConfig, sourceDb *gorm.DB, t
 
 					createTableSql = append(createTableSql, fmt.Sprintf("  `%s` %s%s%s%s%s",
 						sourceColumn.ColumnName, sourceColumn.ColumnType,
-						getCharacterSet(&sourceColumn, &sourceSchema),
-						getColumnNullAbleDefault(&sourceColumn),
-						getColumnExtra(&sourceColumn), dot,
+						getCharacterSet(sourceColumn, sourceSchema),
+						getColumnNullAbleDefault(sourceColumn),
+						getColumnExtra(sourceColumn), dot,
 					))
 				}
 
@@ -683,7 +683,7 @@ func diff(sourceDbConfig DbConfig, targetDbConfig DbConfig, sourceDb *gorm.DB, t
 	defer wg.Done()
 }
 
-func getColumnNullAbleDefault(column *Column) string {
+func getColumnNullAbleDefault(column Column) string {
 	var nullAbleDefault = ""
 
 	if column.IsNullable == "NO" {
@@ -788,7 +788,7 @@ func compareColumns(sourceColumnsPos map[int]Column, targetColumnsPos map[int]Co
 			if _, ok := targetColumnsPos[sourcePos]; ok {
 				targetColumn := targetColumnsPos[sourcePos]
 
-				if !compareColumn(&sourceColumn, &targetColumn) {
+				if !compareColumn(sourceColumn, targetColumn) {
 					return false
 				}
 			} else {
@@ -801,7 +801,7 @@ func compareColumns(sourceColumnsPos map[int]Column, targetColumnsPos map[int]Co
 	return true
 }
 
-func compareColumn(sourceColumn *Column, targetColumn *Column) bool {
+func compareColumn(sourceColumn Column, targetColumn Column) bool {
 	if sourceColumn.ColumnName != targetColumn.ColumnName {
 		return false
 	}
@@ -871,7 +871,7 @@ func compareStatistics(sourceStatisticsMap map[string]map[int]Statistic, targetS
 						if _, ok := targetStatisticsMap[indexName][seqInIndex]; ok {
 							targetStatistic := targetStatisticsMap[indexName][seqInIndex]
 
-							if !compareStatistic(&sourceStatistic, &targetStatistic) {
+							if !compareStatistic(sourceStatistic, targetStatistic) {
 								return false
 							}
 						} else {
@@ -896,7 +896,7 @@ func compareStatisticsIndex(sourceStatisticMap map[int]Statistic, targetStatisti
 			if _, ok := targetStatisticMap[seqInIndex]; ok {
 				targetStatistic := targetStatisticMap[seqInIndex]
 
-				if !compareStatistic(&sourceStatistic, &targetStatistic) {
+				if !compareStatistic(sourceStatistic, targetStatistic) {
 					return false
 				}
 			} else {
@@ -908,7 +908,7 @@ func compareStatisticsIndex(sourceStatisticMap map[int]Statistic, targetStatisti
 	return true
 }
 
-func compareStatistic(sourceStatistic *Statistic, targetStatistic *Statistic) bool {
+func compareStatistic(sourceStatistic Statistic, targetStatistic Statistic) bool {
 	if sourceStatistic.NonUnique != targetStatistic.NonUnique {
 		return false
 	}
@@ -981,7 +981,7 @@ func getColumnAfter(ordinalPosition int, columnsPos map[int]Column) string {
 	}
 }
 
-func getCharacterSet(column *Column, schema *Schema) string {
+func getCharacterSet(column Column, schema Schema) string {
 	if column.CharacterSetName.Valid {
 		if column.CharacterSetName.String != schema.DefaultCharacterSetName {
 			return fmt.Sprintf(" CHARACTER SET %s", column.CharacterSetName.String)
@@ -991,7 +991,7 @@ func getCharacterSet(column *Column, schema *Schema) string {
 	return ""
 }
 
-func getColumnExtra(column *Column) string {
+func getColumnExtra(column Column) string {
 	extra := strings.TrimSpace(strings.Replace(strings.ToUpper(column.EXTRA), "DEFAULT_GENERATED", "", 1))
 
 	if extra != "" {
