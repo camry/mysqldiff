@@ -1,1011 +1,1020 @@
 package cmd
 
 import (
-	"database/sql"
-	"fmt"
-	"github.com/spf13/cobra"
-	"gorm.io/driver/mysql"
-	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
-	"regexp"
-	"sort"
-	"strconv"
-	"strings"
-	"sync"
+    "database/sql"
+    "fmt"
+    "github.com/spf13/cobra"
+    "gorm.io/driver/mysql"
+    "gorm.io/gorm"
+    "gorm.io/gorm/logger"
+    "regexp"
+    "sort"
+    "strconv"
+    "strings"
+    "sync"
 )
 
 type DbConfig struct {
-	User     string
-	Password string
-	Host     string
-	Port     int
-	Database string
-	Charset  string
+    User     string
+    Password string
+    Host     string
+    Port     int
+    Database string
+    Charset  string
 }
 
 type Schema struct {
-	CatalogName             string         `gorm:"column:CATALOG_NAME"`
-	SchemaName              string         `gorm:"column:SCHEMA_NAME"`
-	DefaultCharacterSetName string         `gorm:"column:DEFAULT_CHARACTER_SET_NAME"`
-	DefaultCollationName    string         `gorm:"column:DEFAULT_COLLATION_NAME"`
-	SqlPath                 sql.NullString `gorm:"column:SQL_PATH"`
+    CatalogName             string         `gorm:"column:CATALOG_NAME"`
+    SchemaName              string         `gorm:"column:SCHEMA_NAME"`
+    DefaultCharacterSetName string         `gorm:"column:DEFAULT_CHARACTER_SET_NAME"`
+    DefaultCollationName    string         `gorm:"column:DEFAULT_COLLATION_NAME"`
+    SqlPath                 sql.NullString `gorm:"column:SQL_PATH"`
 }
 
 type Table struct {
-	TableCatalog   string         `gorm:"column:TABLE_CATALOG"`
-	TableSchema    string         `gorm:"column:TABLE_SCHEMA"`
-	TableName      string         `gorm:"column:TABLE_NAME"`
-	TableType      string         `gorm:"column:TABLE_TYPE"`
-	ENGINE         sql.NullString `gorm:"column:ENGINE"`
-	VERSION        sql.NullInt64  `gorm:"column:VERSION"`
-	RowFormat      sql.NullString `gorm:"column:ROW_FORMAT"`
-	TableRows      sql.NullInt64  `gorm:"column:TABLE_ROWS"`
-	AvgRowLength   sql.NullInt64  `gorm:"column:AVG_ROW_LENGTH"`
-	DataLength     sql.NullInt64  `gorm:"column:DATA_LENGTH"`
-	MaxDataLength  sql.NullInt64  `gorm:"column:MAX_DATA_LENGTH"`
-	IndexLength    sql.NullInt64  `gorm:"column:INDEX_LENGTH"`
-	DataFree       sql.NullInt64  `gorm:"column:DATA_FREE"`
-	AutoIncrement  sql.NullInt64  `gorm:"column:AUTO_INCREMENT"`
-	CreateTime     sql.NullTime   `gorm:"column:CREATE_TIME"`
-	UpdateTime     sql.NullTime   `gorm:"column:UPDATE_TIME"`
-	CheckTime      sql.NullTime   `gorm:"column:CHECK_TIME"`
-	TableCollation sql.NullString `gorm:"column:TABLE_COLLATION"`
-	CHECKSUM       sql.NullInt64  `gorm:"column:CHECKSUM"`
-	CreateOptions  sql.NullString `gorm:"column:CREATE_OPTIONS"`
-	TableComment   string         `gorm:"column:TABLE_COMMENT"`
+    TableCatalog   string         `gorm:"column:TABLE_CATALOG"`
+    TableSchema    string         `gorm:"column:TABLE_SCHEMA"`
+    TableName      string         `gorm:"column:TABLE_NAME"`
+    TableType      string         `gorm:"column:TABLE_TYPE"`
+    ENGINE         sql.NullString `gorm:"column:ENGINE"`
+    VERSION        sql.NullInt64  `gorm:"column:VERSION"`
+    RowFormat      sql.NullString `gorm:"column:ROW_FORMAT"`
+    TableRows      sql.NullInt64  `gorm:"column:TABLE_ROWS"`
+    AvgRowLength   sql.NullInt64  `gorm:"column:AVG_ROW_LENGTH"`
+    DataLength     sql.NullInt64  `gorm:"column:DATA_LENGTH"`
+    MaxDataLength  sql.NullInt64  `gorm:"column:MAX_DATA_LENGTH"`
+    IndexLength    sql.NullInt64  `gorm:"column:INDEX_LENGTH"`
+    DataFree       sql.NullInt64  `gorm:"column:DATA_FREE"`
+    AutoIncrement  sql.NullInt64  `gorm:"column:AUTO_INCREMENT"`
+    CreateTime     sql.NullTime   `gorm:"column:CREATE_TIME"`
+    UpdateTime     sql.NullTime   `gorm:"column:UPDATE_TIME"`
+    CheckTime      sql.NullTime   `gorm:"column:CHECK_TIME"`
+    TableCollation sql.NullString `gorm:"column:TABLE_COLLATION"`
+    CHECKSUM       sql.NullInt64  `gorm:"column:CHECKSUM"`
+    CreateOptions  sql.NullString `gorm:"column:CREATE_OPTIONS"`
+    TableComment   string         `gorm:"column:TABLE_COMMENT"`
 }
 
 type Column struct {
-	TableCatalog           string         `gorm:"column:TABLE_CATALOG"`
-	TableSchema            string         `gorm:"column:TABLE_SCHEMA"`
-	TableName              string         `gorm:"column:TABLE_NAME"`
-	ColumnName             string         `gorm:"column:COLUMN_NAME"`
-	OrdinalPosition        int            `gorm:"column:ORDINAL_POSITION"`
-	ColumnDefault          sql.NullString `gorm:"column:COLUMN_DEFAULT"`
-	IsNullable             string         `gorm:"column:IS_NULLABLE"`
-	DataType               string         `gorm:"column:DATA_TYPE"`
-	CharacterMaximumLength sql.NullInt64  `gorm:"column:CHARACTER_MAXIMUM_LENGTH"`
-	CharacterOctetLength   sql.NullInt64  `gorm:"column:CHARACTER_OCTET_LENGTH"`
-	NumericPrecision       sql.NullInt64  `gorm:"column:NUMERIC_PRECISION"`
-	NumericScale           sql.NullInt64  `gorm:"column:NUMERIC_SCALE"`
-	DatetimePrecision      sql.NullInt64  `gorm:"column:DATETIME_PRECISION"`
-	CharacterSetName       sql.NullString `gorm:"column:CHARACTER_SET_NAME"`
-	CollationName          sql.NullString `gorm:"column:COLLATION_NAME"`
-	ColumnType             string         `gorm:"column:COLUMN_TYPE"`
-	ColumnKey              string         `gorm:"column:COLUMN_KEY"`
-	EXTRA                  string         `gorm:"column:EXTRA"`
-	PRIVILEGES             string         `gorm:"column:PRIVILEGES"`
-	ColumnComment          string         `gorm:"column:COLUMN_COMMENT"`
-	GenerationExpression   string         `gorm:"column:GENERATION_EXPRESSION"`
+    TableCatalog           string         `gorm:"column:TABLE_CATALOG"`
+    TableSchema            string         `gorm:"column:TABLE_SCHEMA"`
+    TableName              string         `gorm:"column:TABLE_NAME"`
+    ColumnName             string         `gorm:"column:COLUMN_NAME"`
+    OrdinalPosition        int            `gorm:"column:ORDINAL_POSITION"`
+    ColumnDefault          sql.NullString `gorm:"column:COLUMN_DEFAULT"`
+    IsNullable             string         `gorm:"column:IS_NULLABLE"`
+    DataType               string         `gorm:"column:DATA_TYPE"`
+    CharacterMaximumLength sql.NullInt64  `gorm:"column:CHARACTER_MAXIMUM_LENGTH"`
+    CharacterOctetLength   sql.NullInt64  `gorm:"column:CHARACTER_OCTET_LENGTH"`
+    NumericPrecision       sql.NullInt64  `gorm:"column:NUMERIC_PRECISION"`
+    NumericScale           sql.NullInt64  `gorm:"column:NUMERIC_SCALE"`
+    DatetimePrecision      sql.NullInt64  `gorm:"column:DATETIME_PRECISION"`
+    CharacterSetName       sql.NullString `gorm:"column:CHARACTER_SET_NAME"`
+    CollationName          sql.NullString `gorm:"column:COLLATION_NAME"`
+    ColumnType             string         `gorm:"column:COLUMN_TYPE"`
+    ColumnKey              string         `gorm:"column:COLUMN_KEY"`
+    EXTRA                  string         `gorm:"column:EXTRA"`
+    PRIVILEGES             string         `gorm:"column:PRIVILEGES"`
+    ColumnComment          string         `gorm:"column:COLUMN_COMMENT"`
+    GenerationExpression   string         `gorm:"column:GENERATION_EXPRESSION"`
 }
 
 type Statistic struct {
-	TableCatalog string         `gorm:"column:TABLE_CATALOG"`
-	TableSchema  string         `gorm:"column:TABLE_SCHEMA"`
-	TableName    string         `gorm:"column:TABLE_NAME"`
-	NonUnique    int64          `gorm:"column:NON_UNIQUE"`
-	IndexSchema  string         `gorm:"column:INDEX_SCHEMA"`
-	IndexName    string         `gorm:"column:INDEX_NAME"`
-	SeqInIndex   int            `gorm:"column:SEQ_IN_INDEX"`
-	ColumnName   string         `gorm:"column:COLUMN_NAME"`
-	COLLATION    sql.NullString `gorm:"column:COLLATION"`
-	CARDINALITY  sql.NullInt64  `gorm:"column:CARDINALITY"`
-	SubPart      sql.NullInt32  `gorm:"column:SUB_PART"`
-	PACKED       sql.NullString `gorm:"column:PACKED"`
-	NULLABLE     string         `gorm:"column:NULLABLE"`
-	IndexType    string         `gorm:"column:INDEX_TYPE"`
-	COMMENT      sql.NullString `gorm:"column:COMMENT"`
-	IndexComment string         `gorm:"column:INDEX_COMMENT"`
-	IsVisible    sql.NullString `gorm:"column:IS_VISIBLE"`
+    TableCatalog string         `gorm:"column:TABLE_CATALOG"`
+    TableSchema  string         `gorm:"column:TABLE_SCHEMA"`
+    TableName    string         `gorm:"column:TABLE_NAME"`
+    NonUnique    int64          `gorm:"column:NON_UNIQUE"`
+    IndexSchema  string         `gorm:"column:INDEX_SCHEMA"`
+    IndexName    string         `gorm:"column:INDEX_NAME"`
+    SeqInIndex   int            `gorm:"column:SEQ_IN_INDEX"`
+    ColumnName   string         `gorm:"column:COLUMN_NAME"`
+    COLLATION    sql.NullString `gorm:"column:COLLATION"`
+    CARDINALITY  sql.NullInt64  `gorm:"column:CARDINALITY"`
+    SubPart      sql.NullInt32  `gorm:"column:SUB_PART"`
+    PACKED       sql.NullString `gorm:"column:PACKED"`
+    NULLABLE     string         `gorm:"column:NULLABLE"`
+    IndexType    string         `gorm:"column:INDEX_TYPE"`
+    COMMENT      sql.NullString `gorm:"column:COMMENT"`
+    IndexComment string         `gorm:"column:INDEX_COMMENT"`
+    IsVisible    sql.NullString `gorm:"column:IS_VISIBLE"`
 }
 
 type View struct {
-	TableCatalog        string `gorm:"column:TABLE_CATALOG"`
-	TableSchema         string `gorm:"column:TABLE_SCHEMA"`
-	TableName           string `gorm:"column:TABLE_NAME"`
-	ViewDefinition      string `gorm:"column:VIEW_DEFINITION"`
-	CheckOption         string `gorm:"column:CHECK_OPTION"`
-	IsUpdatable         string `gorm:"column:IS_UPDATABLE"`
-	DEFINER             string `gorm:"column:DEFINER"`
-	SecurityType        string `gorm:"column:SECURITY_TYPE"`
-	CharacterSetClient  string `gorm:"column:CHARACTER_SET_CLIENT"`
-	CollationConnection string `gorm:"column:COLLATION_CONNECTION"`
+    TableCatalog        string `gorm:"column:TABLE_CATALOG"`
+    TableSchema         string `gorm:"column:TABLE_SCHEMA"`
+    TableName           string `gorm:"column:TABLE_NAME"`
+    ViewDefinition      string `gorm:"column:VIEW_DEFINITION"`
+    CheckOption         string `gorm:"column:CHECK_OPTION"`
+    IsUpdatable         string `gorm:"column:IS_UPDATABLE"`
+    DEFINER             string `gorm:"column:DEFINER"`
+    SecurityType        string `gorm:"column:SECURITY_TYPE"`
+    CharacterSetClient  string `gorm:"column:CHARACTER_SET_CLIENT"`
+    CollationConnection string `gorm:"column:COLLATION_CONNECTION"`
 }
 
 const (
-	Dsn         = "%s:%s@tcp(%s:%d)/information_schema?timeout=10s&parseTime=true&charset=%s"
-	HostPattern = "^(.*)\\:(.*)\\@(.*)\\:(\\d+)$"
-	DbPattern   = "^([A-Za-z0-9_]+)\\:([A-Za-z0-9_]+)$"
+    Dsn         = "%s:%s@tcp(%s:%d)/information_schema?timeout=10s&parseTime=true&charset=%s"
+    HostPattern = "^(.*)\\:(.*)\\@(.*)\\:(\\d+)$"
+    DbPattern   = "^([A-Za-z0-9_]+)\\:([A-Za-z0-9_]+)$"
 )
 
 func Execute() error {
-	return rootCmd.Execute()
+    return rootCmd.Execute()
 }
 
 func init() {
-	cobra.OnInitialize(initConfig)
+    cobra.OnInitialize(initConfig)
 
-	rootCmd.Flags().StringVarP(&source, "source", "s", "", "指定源服务器。(格式: <user>:<password>@<host>:<port>)")
-	rootCmd.Flags().StringVarP(&target, "target", "t", "", "指定目标服务器。(格式: <user>:<password>@<host>:<port>)")
-	rootCmd.Flags().StringVarP(&db, "db", "d", "", "指定数据库。(格式: <source_db>:<target_db>)")
+    rootCmd.Flags().StringVarP(&source, "source", "s", "", "指定源服务器。(格式: <user>:<password>@<host>:<port>)")
+    rootCmd.Flags().StringVarP(&target, "target", "t", "", "指定目标服务器。(格式: <user>:<password>@<host>:<port>)")
+    rootCmd.Flags().StringVarP(&db, "db", "d", "", "指定数据库。(格式: <source_db>:<target_db>)")
 
-	cobra.CheckErr(rootCmd.MarkFlagRequired("source"))
-	cobra.CheckErr(rootCmd.MarkFlagRequired("db"))
+    cobra.CheckErr(rootCmd.MarkFlagRequired("source"))
+    cobra.CheckErr(rootCmd.MarkFlagRequired("db"))
 
-	rootCmd.AddCommand(completionCmd)
+    rootCmd.AddCommand(completionCmd)
 }
 
 func initConfig() {
 }
 
 var (
-	wg          sync.WaitGroup
-	lock        sync.Mutex
-	source      string
-	target      string
-	db          string
-	diffSqlKeys []string
-	diffSqlMap  = make(map[string]string)
+    wg   sync.WaitGroup
+    lock sync.Mutex
+    ch   = make(chan bool, 16)
 
-	rootCmd = &cobra.Command{
-		Use:     "mysqldiff",
-		Short:   "差异 SQL 工具。",
-		Version: "v1.0.1",
-		Run: func(cmd *cobra.Command, args []string) {
-			sourceMatched, err1 := regexp.MatchString(HostPattern, source)
-			dbMatched, err3 := regexp.MatchString(DbPattern, db)
+    source      string
+    target      string
+    db          string
+    diffSqlKeys []string
+    diffSqlMap  = make(map[string]string)
 
-			cobra.CheckErr(err1)
-			cobra.CheckErr(err3)
+    rootCmd = &cobra.Command{
+        Use:     "mysqldiff",
+        Short:   "差异 SQL 工具。",
+        Version: "v1.0.2",
+        Run: func(cmd *cobra.Command, args []string) {
+            sourceMatched, err1 := regexp.MatchString(HostPattern, source)
+            dbMatched, err3 := regexp.MatchString(DbPattern, db)
 
-			if !sourceMatched {
-				cobra.CheckErr(fmt.Errorf("源服务器 `%s` 格式错误。(正确格式: <user>:<password>@<host>:<port>)", source))
-			}
+            cobra.CheckErr(err1)
+            cobra.CheckErr(err3)
 
-			if !dbMatched {
-				cobra.CheckErr(fmt.Errorf("数据库 `%s` 格式错误。(正确格式: <source_db>:<target_db>)", db))
-			}
+            if !sourceMatched {
+                cobra.CheckErr(fmt.Errorf("源服务器 `%s` 格式错误。(正确格式: <user>:<password>@<host>:<port>)", source))
+            }
 
-			var (
-				sourceUser = strings.Split(source[0:strings.LastIndex(source, "@")], ":")
-				sourceHost = strings.Split(source[strings.LastIndex(source, "@")+1:], ":")
-				databases  = strings.Split(db, ":")
+            if !dbMatched {
+                cobra.CheckErr(fmt.Errorf("数据库 `%s` 格式错误。(正确格式: <source_db>:<target_db>)", db))
+            }
 
-				err error
-			)
+            var (
+                sourceUser = strings.Split(source[0:strings.LastIndex(source, "@")], ":")
+                sourceHost = strings.Split(source[strings.LastIndex(source, "@")+1:], ":")
+                databases  = strings.Split(db, ":")
 
-			sourceDbConfig := DbConfig{
-				User:     sourceUser[0],
-				Password: sourceUser[1],
-				Host:     sourceHost[0],
-				Charset:  "utf8",
-				Database: databases[0],
-			}
-			sourceDbConfig.Port, err = strconv.Atoi(sourceHost[1])
+                err error
+            )
 
-			cobra.CheckErr(err)
+            sourceDbConfig := DbConfig{
+                User:     sourceUser[0],
+                Password: sourceUser[1],
+                Host:     sourceHost[0],
+                Charset:  "utf8",
+                Database: databases[0],
+            }
+            sourceDbConfig.Port, err = strconv.Atoi(sourceHost[1])
 
-			targetDbConfig := DbConfig{
-				Charset:  "utf8",
-				Database: databases[1],
-			}
+            cobra.CheckErr(err)
 
-			sourceDb, err := gorm.Open(mysql.New(mysql.Config{
-				DSN: fmt.Sprintf(Dsn,
-					sourceDbConfig.User, sourceDbConfig.Password,
-					sourceDbConfig.Host, sourceDbConfig.Port,
-					sourceDbConfig.Charset,
-				),
-			}), &gorm.Config{
-				SkipDefaultTransaction: true,
-				DisableAutomaticPing:   true,
-				Logger:                 logger.Default.LogMode(logger.Silent),
-			})
+            targetDbConfig := DbConfig{
+                Charset:  "utf8",
+                Database: databases[1],
+            }
 
-			cobra.CheckErr(err)
+            sourceDb, err := gorm.Open(mysql.New(mysql.Config{
+                DSN: fmt.Sprintf(Dsn,
+                    sourceDbConfig.User, sourceDbConfig.Password,
+                    sourceDbConfig.Host, sourceDbConfig.Port,
+                    sourceDbConfig.Charset,
+                ),
+            }), &gorm.Config{
+                SkipDefaultTransaction: true,
+                DisableAutomaticPing:   true,
+                Logger:                 logger.Default.LogMode(logger.Silent),
+            })
 
-			var targetDb = sourceDb
+            cobra.CheckErr(err)
 
-			if target != "" {
-				targetMatched, err2 := regexp.MatchString(HostPattern, target)
+            var targetDb = sourceDb
 
-				cobra.CheckErr(err2)
+            if target != "" {
+                targetMatched, err2 := regexp.MatchString(HostPattern, target)
 
-				if !targetMatched {
-					cobra.CheckErr(fmt.Errorf("目标服务器 `%s` 格式错误。(正确格式: <user>:<password>@<host>:<port>)", target))
-				}
+                cobra.CheckErr(err2)
 
-				var targetUser = strings.Split(target[0:strings.LastIndex(target, "@")], ":")
-				var targetHost = strings.Split(target[strings.LastIndex(target, "@")+1:], ":")
+                if !targetMatched {
+                    cobra.CheckErr(fmt.Errorf("目标服务器 `%s` 格式错误。(正确格式: <user>:<password>@<host>:<port>)", target))
+                }
 
-				targetDbConfig.User = targetUser[0]
-				targetDbConfig.Password = targetUser[1]
-				targetDbConfig.Host = targetHost[0]
-				targetDbConfig.Port, err = strconv.Atoi(targetHost[1])
+                var targetUser = strings.Split(target[0:strings.LastIndex(target, "@")], ":")
+                var targetHost = strings.Split(target[strings.LastIndex(target, "@")+1:], ":")
 
-				cobra.CheckErr(err)
+                targetDbConfig.User = targetUser[0]
+                targetDbConfig.Password = targetUser[1]
+                targetDbConfig.Host = targetHost[0]
+                targetDbConfig.Port, err = strconv.Atoi(targetHost[1])
 
-				targetDb, err = gorm.Open(mysql.New(mysql.Config{
-					DSN: fmt.Sprintf(Dsn,
-						targetDbConfig.User, targetDbConfig.Password,
-						targetDbConfig.Host, targetDbConfig.Port,
-						targetDbConfig.Charset,
-					),
-				}), &gorm.Config{
-					SkipDefaultTransaction: true,
-					DisableAutomaticPing:   true,
-					Logger:                 logger.Default.LogMode(logger.Silent),
-				})
+                cobra.CheckErr(err)
 
-				cobra.CheckErr(err)
-			}
+                targetDb, err = gorm.Open(mysql.New(mysql.Config{
+                    DSN: fmt.Sprintf(Dsn,
+                        targetDbConfig.User, targetDbConfig.Password,
+                        targetDbConfig.Host, targetDbConfig.Port,
+                        targetDbConfig.Charset,
+                    ),
+                }), &gorm.Config{
+                    SkipDefaultTransaction: true,
+                    DisableAutomaticPing:   true,
+                    Logger:                 logger.Default.LogMode(logger.Silent),
+                })
 
-			var (
-				sourceSchema Schema
-				targetSchema Schema
-			)
+                cobra.CheckErr(err)
+            }
 
-			sourceSchemaResult := sourceDb.Table("SCHEMATA").Limit(1).Find(
-				&sourceSchema,
-				"`SCHEMA_NAME` = ?", sourceDbConfig.Database,
-			)
+            var (
+                sourceSchema Schema
+                targetSchema Schema
+            )
 
-			targetSchemaResult := targetDb.Table("SCHEMATA").Limit(1).Find(
-				&targetSchema,
-				"`SCHEMA_NAME` = ?", targetDbConfig.Database,
-			)
+            sourceSchemaResult := sourceDb.Table("SCHEMATA").Limit(1).Find(
+                &sourceSchema,
+                "`SCHEMA_NAME` = ?", sourceDbConfig.Database,
+            )
 
-			if sourceSchemaResult.RowsAffected <= 0 {
-				cobra.CheckErr(fmt.Errorf("源数据库 `%s` 不存在。", databases[0]))
-			}
+            targetSchemaResult := targetDb.Table("SCHEMATA").Limit(1).Find(
+                &targetSchema,
+                "`SCHEMA_NAME` = ?", targetDbConfig.Database,
+            )
 
-			if targetSchemaResult.RowsAffected <= 0 {
-				cobra.CheckErr(fmt.Errorf("目标数据库 `%s` 不存在。", databases[1]))
-			}
+            if sourceSchemaResult.RowsAffected <= 0 {
+                cobra.CheckErr(fmt.Errorf("源数据库 `%s` 不存在。", databases[0]))
+            }
 
-			var (
-				sourceTableData []Table
-				targetTableData []Table
-			)
+            if targetSchemaResult.RowsAffected <= 0 {
+                cobra.CheckErr(fmt.Errorf("目标数据库 `%s` 不存在。", databases[1]))
+            }
 
-			sourceDb.Table("TABLES").Order("`TABLE_NAME` ASC").Find(
-				&sourceTableData,
-				"`TABLE_SCHEMA` = ?", sourceDbConfig.Database,
-			)
-			targetDb.Table("TABLES").Order("`TABLE_NAME` ASC").Find(
-				&targetTableData,
-				"`TABLE_SCHEMA` = ?", targetDbConfig.Database,
-			)
+            var (
+                sourceTableData []Table
+                targetTableData []Table
+            )
 
-			sourceTableMap := make(map[string]Table)
-			targetTableMap := make(map[string]Table)
+            sourceDb.Table("TABLES").Order("`TABLE_NAME` ASC").Find(
+                &sourceTableData,
+                "`TABLE_SCHEMA` = ?", sourceDbConfig.Database,
+            )
+            targetDb.Table("TABLES").Order("`TABLE_NAME` ASC").Find(
+                &targetTableData,
+                "`TABLE_SCHEMA` = ?", targetDbConfig.Database,
+            )
 
-			for _, table := range sourceTableData {
-				sourceTableMap[table.TableName] = table
-			}
+            sourceTableMap := make(map[string]Table)
+            targetTableMap := make(map[string]Table)
 
-			for _, table := range targetTableData {
-				targetTableMap[table.TableName] = table
-			}
+            for _, table := range sourceTableData {
+                sourceTableMap[table.TableName] = table
+            }
 
-			// DROP TABLE Or DROP VIEW...
-			for _, targetTable := range targetTableData {
-				if _, ok := sourceTableMap[targetTable.TableName]; !ok {
-					switch targetTable.TableType {
-					case "BASE TABLE":
-						diffSqlKeys = append(diffSqlKeys, targetTable.TableName)
-						diffSqlMap[targetTable.TableName] = fmt.Sprintf("DROP TABLE IF EXISTS `%s`;", targetTable.TableName)
-					case "VIEW":
-						diffSqlKeys = append(diffSqlKeys, targetTable.TableName)
-						diffSqlMap[targetTable.TableName] = fmt.Sprintf("DROP VIEW IF EXISTS `%s`;", targetTable.TableName)
-					}
-				}
-			}
+            for _, table := range targetTableData {
+                targetTableMap[table.TableName] = table
+            }
 
-			for _, sourceTable := range sourceTableData {
-				wg.Add(1)
-				go diff(sourceDbConfig, targetDbConfig, sourceDb, targetDb, sourceSchema, sourceTable, targetTableMap)
-			}
+            // DROP TABLE Or DROP VIEW...
+            for _, targetTable := range targetTableData {
+                if _, ok := sourceTableMap[targetTable.TableName]; !ok {
+                    switch targetTable.TableType {
+                    case "BASE TABLE":
+                        diffSqlKeys = append(diffSqlKeys, targetTable.TableName)
+                        diffSqlMap[targetTable.TableName] = fmt.Sprintf("DROP TABLE IF EXISTS `%s`;", targetTable.TableName)
+                    case "VIEW":
+                        diffSqlKeys = append(diffSqlKeys, targetTable.TableName)
+                        diffSqlMap[targetTable.TableName] = fmt.Sprintf("DROP VIEW IF EXISTS `%s`;", targetTable.TableName)
+                    }
+                }
+            }
 
-			wg.Wait()
+            defer close(ch)
 
-			// Print Sql...
-			if len(diffSqlKeys) > 0 && len(diffSqlMap) > 0 {
-				fmt.Println(fmt.Sprintf("SET NAMES %s;\n", sourceSchema.DefaultCharacterSetName))
+            for _, sourceTable := range sourceTableData {
+                go diff(sourceDbConfig, targetDbConfig, sourceDb, targetDb, sourceSchema, sourceTable, targetTableMap)
+            }
 
-				sort.Strings(diffSqlKeys)
+            wg.Wait()
 
-				for k, diffSqlKey := range diffSqlKeys {
-					if diffSql, ok := diffSqlMap[diffSqlKey]; ok {
-						if k < len(diffSqlKeys)-1 {
-							fmt.Println(diffSql)
-							fmt.Println()
-						} else {
-							fmt.Println(diffSql)
-						}
-					}
-				}
-			}
-		},
-	}
+            // Print Sql...
+            if len(diffSqlKeys) > 0 && len(diffSqlMap) > 0 {
+                fmt.Println(fmt.Sprintf("SET NAMES %s;\n", sourceSchema.DefaultCharacterSetName))
+
+                sort.Strings(diffSqlKeys)
+
+                for k, diffSqlKey := range diffSqlKeys {
+                    if diffSql, ok := diffSqlMap[diffSqlKey]; ok {
+                        if k < len(diffSqlKeys)-1 {
+                            fmt.Println(diffSql)
+                            fmt.Println()
+                        } else {
+                            fmt.Println(diffSql)
+                        }
+                    }
+                }
+            }
+        },
+    }
 )
 
 func diff(sourceDbConfig DbConfig, targetDbConfig DbConfig, sourceDb *gorm.DB, targetDb *gorm.DB, sourceSchema Schema, sourceTable Table, targetTableMap map[string]Table) {
-	switch sourceTable.TableType {
-	case "BASE TABLE":
-		if _, ok := targetTableMap[sourceTable.TableName]; ok {
-			var (
-				sourceColumnData []Column
-				targetColumnData []Column
-			)
+    defer wg.Done()
 
-			// ALTER TABLE ...
-			sourceDb.Table("COLUMNS").Order("`ORDINAL_POSITION` ASC").Find(
-				&sourceColumnData,
-				"`TABLE_SCHEMA` = ? AND `TABLE_NAME` = ?",
-				sourceDbConfig.Database, sourceTable.TableName,
-			)
-			targetDb.Table("COLUMNS").Order("`ORDINAL_POSITION` ASC").Find(
-				&targetColumnData,
-				"`TABLE_SCHEMA` = ? AND `TABLE_NAME` = ?",
-				targetDbConfig.Database, sourceTable.TableName,
-			)
+    wg.Add(1)
 
-			sourceColumnDataLen := len(sourceColumnData)
-			targetColumnDataLen := len(targetColumnData)
+    ch <- true
 
-			// ALTER LIST ...
-			var (
-				alterTableSql  []string
-				alterColumnSql []string
-				alterKeySql    []string
-			)
+    switch sourceTable.TableType {
+    case "BASE TABLE":
+        if _, ok := targetTableMap[sourceTable.TableName]; ok {
+            var (
+                sourceColumnData []Column
+                targetColumnData []Column
+            )
 
-			if sourceColumnDataLen > 0 && targetColumnDataLen > 0 {
-				sourceColumns := make(map[string]Column)
-				targetColumns := make(map[string]Column)
-				sourceColumnsPos := make(map[int]Column)
-				targetColumnsPos := make(map[int]Column)
+            // ALTER TABLE ...
+            sourceDb.Table("COLUMNS").Order("`ORDINAL_POSITION` ASC").Find(
+                &sourceColumnData,
+                "`TABLE_SCHEMA` = ? AND `TABLE_NAME` = ?",
+                sourceDbConfig.Database, sourceTable.TableName,
+            )
+            targetDb.Table("COLUMNS").Order("`ORDINAL_POSITION` ASC").Find(
+                &targetColumnData,
+                "`TABLE_SCHEMA` = ? AND `TABLE_NAME` = ?",
+                targetDbConfig.Database, sourceTable.TableName,
+            )
 
-				for _, sourceColumn := range sourceColumnData {
-					sourceColumns[sourceColumn.ColumnName] = sourceColumn
-					sourceColumnsPos[sourceColumn.OrdinalPosition] = sourceColumn
-				}
+            sourceColumnDataLen := len(sourceColumnData)
+            targetColumnDataLen := len(targetColumnData)
 
-				for _, targetColumn := range targetColumnData {
-					targetColumns[targetColumn.ColumnName] = targetColumn
-					targetColumnsPos[targetColumn.OrdinalPosition] = targetColumn
-				}
+            // ALTER LIST ...
+            var (
+                alterTableSql  []string
+                alterColumnSql []string
+                alterKeySql    []string
+            )
 
-				if !compareColumns(sourceColumnsPos, targetColumnsPos) {
-					alterTableSql = append(alterTableSql, fmt.Sprintf("ALTER TABLE `%s`", sourceTable.TableName))
+            if sourceColumnDataLen > 0 && targetColumnDataLen > 0 {
+                sourceColumns := make(map[string]Column)
+                targetColumns := make(map[string]Column)
+                sourceColumnsPos := make(map[int]Column)
+                targetColumnsPos := make(map[int]Column)
 
-					// DROP COLUMN ...
-					for _, targetColumn := range targetColumns {
-						if _, ok := sourceColumns[targetColumn.ColumnName]; !ok {
-							resetCalcPosition(targetColumn.ColumnName, targetColumn.OrdinalPosition, targetColumns, 3)
+                for _, sourceColumn := range sourceColumnData {
+                    sourceColumns[sourceColumn.ColumnName] = sourceColumn
+                    sourceColumnsPos[sourceColumn.OrdinalPosition] = sourceColumn
+                }
 
-							alterColumnSql = append(alterColumnSql, fmt.Sprintf("  DROP COLUMN `%s`",
-								targetColumn.ColumnName,
-							))
-						}
-					}
+                for _, targetColumn := range targetColumnData {
+                    targetColumns[targetColumn.ColumnName] = targetColumn
+                    targetColumnsPos[targetColumn.OrdinalPosition] = targetColumn
+                }
 
-					// ADD COLUMN ...
-					for _, sourceColumn := range sourceColumnData {
-						if _, ok := targetColumns[sourceColumn.ColumnName]; !ok {
-							alterColumnSql = append(alterColumnSql, fmt.Sprintf(
-								"  ADD COLUMN `%s` %s%s%s%s %s",
-								sourceColumn.ColumnName, sourceColumn.ColumnType,
-								getCharacterSet(sourceColumn, sourceSchema),
-								getColumnNullAbleDefault(sourceColumn),
-								getColumnExtra(sourceColumn),
-								getColumnAfter(sourceColumn.OrdinalPosition, sourceColumnsPos),
-							))
+                if !compareColumns(sourceColumnsPos, targetColumnsPos) {
+                    alterTableSql = append(alterTableSql, fmt.Sprintf("ALTER TABLE `%s`", sourceTable.TableName))
 
-							resetCalcPosition(sourceColumn.ColumnName, sourceColumn.OrdinalPosition, targetColumns, 1)
-						}
-					}
+                    // DROP COLUMN ...
+                    for _, targetColumn := range targetColumns {
+                        if _, ok := sourceColumns[targetColumn.ColumnName]; !ok {
+                            resetCalcPosition(targetColumn.ColumnName, targetColumn.OrdinalPosition, targetColumns, 3)
 
-					// MODIFY COLUMN ...
-					for _, sourceColumn := range sourceColumnData {
-						columnName := sourceColumn.ColumnName
+                            alterColumnSql = append(alterColumnSql, fmt.Sprintf("  DROP COLUMN `%s`",
+                                targetColumn.ColumnName,
+                            ))
+                        }
+                    }
 
-						if _, ok := targetColumns[columnName]; ok {
-							targetColumn := targetColumns[columnName]
+                    // ADD COLUMN ...
+                    for _, sourceColumn := range sourceColumnData {
+                        if _, ok := targetColumns[sourceColumn.ColumnName]; !ok {
+                            alterColumnSql = append(alterColumnSql, fmt.Sprintf(
+                                "  ADD COLUMN `%s` %s%s%s%s %s",
+                                sourceColumn.ColumnName, sourceColumn.ColumnType,
+                                getCharacterSet(sourceColumn, sourceSchema),
+                                getColumnNullAbleDefault(sourceColumn),
+                                getColumnExtra(sourceColumn),
+                                getColumnAfter(sourceColumn.OrdinalPosition, sourceColumnsPos),
+                            ))
 
-							if !compareColumn(sourceColumn, targetColumn) {
-								alterColumnSql = append(alterColumnSql,
-									fmt.Sprintf("  MODIFY COLUMN `%s` %s%s%s%s %s",
-										columnName, sourceColumn.ColumnType,
-										getCharacterSet(sourceColumn, sourceSchema),
-										getColumnNullAbleDefault(sourceColumn),
-										getColumnExtra(sourceColumn),
-										getColumnAfter(sourceColumn.OrdinalPosition, sourceColumnsPos),
-									),
-								)
+                            resetCalcPosition(sourceColumn.ColumnName, sourceColumn.OrdinalPosition, targetColumns, 1)
+                        }
+                    }
 
-								resetCalcPosition(columnName, sourceColumn.OrdinalPosition, targetColumns, 2)
-							}
-						}
-					}
-				}
-			}
+                    // MODIFY COLUMN ...
+                    for _, sourceColumn := range sourceColumnData {
+                        columnName := sourceColumn.ColumnName
 
-			// ADD KEY AND DROP INDEX ...
-			var (
-				sourceStatisticsData []Statistic
-				targetStatisticsData []Statistic
-			)
+                        if _, ok := targetColumns[columnName]; ok {
+                            targetColumn := targetColumns[columnName]
 
-			sourceDb.Table("STATISTICS").Find(
-				&sourceStatisticsData,
-				"`TABLE_SCHEMA` = ? AND `TABLE_NAME` = ?",
-				sourceDbConfig.Database, sourceTable.TableName,
-			)
+                            if !compareColumn(sourceColumn, targetColumn) {
+                                alterColumnSql = append(alterColumnSql,
+                                    fmt.Sprintf("  MODIFY COLUMN `%s` %s%s%s%s %s",
+                                        columnName, sourceColumn.ColumnType,
+                                        getCharacterSet(sourceColumn, sourceSchema),
+                                        getColumnNullAbleDefault(sourceColumn),
+                                        getColumnExtra(sourceColumn),
+                                        getColumnAfter(sourceColumn.OrdinalPosition, sourceColumnsPos),
+                                    ),
+                                )
 
-			targetDb.Table("STATISTICS").Find(
-				&targetStatisticsData,
-				"`TABLE_SCHEMA` = ? AND `TABLE_NAME` = ?",
-				targetDbConfig.Database, sourceTable.TableName,
-			)
+                                resetCalcPosition(columnName, sourceColumn.OrdinalPosition, targetColumns, 2)
+                            }
+                        }
+                    }
+                }
+            }
 
-			sourceStatisticsDataLen := len(sourceStatisticsData)
+            // ADD KEY AND DROP INDEX ...
+            var (
+                sourceStatisticsData []Statistic
+                targetStatisticsData []Statistic
+            )
 
-			if sourceStatisticsDataLen > 0 {
-				sourceStatisticsDataMap := make(map[string]map[int]Statistic)
-				targetStatisticsDataMap := make(map[string]map[int]Statistic)
+            sourceDb.Table("STATISTICS").Find(
+                &sourceStatisticsData,
+                "`TABLE_SCHEMA` = ? AND `TABLE_NAME` = ?",
+                sourceDbConfig.Database, sourceTable.TableName,
+            )
 
-				for _, sourceStatistic := range sourceStatisticsData {
-					if _, ok := sourceStatisticsDataMap[sourceStatistic.IndexName]; ok {
-						sourceStatisticsDataMap[sourceStatistic.IndexName][sourceStatistic.SeqInIndex] = sourceStatistic
-					} else {
-						sourceSeqInIndexStatisticMap := make(map[int]Statistic)
-						sourceSeqInIndexStatisticMap[sourceStatistic.SeqInIndex] = sourceStatistic
-						sourceStatisticsDataMap[sourceStatistic.IndexName] = sourceSeqInIndexStatisticMap
-					}
-				}
+            targetDb.Table("STATISTICS").Find(
+                &targetStatisticsData,
+                "`TABLE_SCHEMA` = ? AND `TABLE_NAME` = ?",
+                targetDbConfig.Database, sourceTable.TableName,
+            )
 
-				for _, targetStatistic := range targetStatisticsData {
-					if _, ok := targetStatisticsDataMap[targetStatistic.IndexName]; ok {
-						targetStatisticsDataMap[targetStatistic.IndexName][targetStatistic.SeqInIndex] = targetStatistic
-					} else {
-						targetSeqInIndexStatisticMap := make(map[int]Statistic)
-						targetSeqInIndexStatisticMap[targetStatistic.SeqInIndex] = targetStatistic
-						targetStatisticsDataMap[targetStatistic.IndexName] = targetSeqInIndexStatisticMap
-					}
-				}
+            sourceStatisticsDataLen := len(sourceStatisticsData)
 
-				if !compareStatistics(sourceStatisticsDataMap, targetStatisticsDataMap) {
-					if len(alterTableSql) <= 0 {
-						alterTableSql = append(alterTableSql, fmt.Sprintf("ALTER TABLE `%s`", sourceTable.TableName))
-					}
+            if sourceStatisticsDataLen > 0 {
+                sourceStatisticsDataMap := make(map[string]map[int]Statistic)
+                targetStatisticsDataMap := make(map[string]map[int]Statistic)
 
-					// DROP INDEX ...
-					for targetIndexName := range targetStatisticsDataMap {
-						if _, ok := sourceStatisticsDataMap[targetIndexName]; !ok {
-							if "PRIMARY" == targetIndexName {
-								alterKeySql = append(alterKeySql, "  DROP PRIMARY KEY")
-							} else {
-								alterKeySql = append(alterKeySql, fmt.Sprintf("  DROP INDEX `%s`", targetIndexName))
-							}
-						}
-					}
+                for _, sourceStatistic := range sourceStatisticsData {
+                    if _, ok := sourceStatisticsDataMap[sourceStatistic.IndexName]; ok {
+                        sourceStatisticsDataMap[sourceStatistic.IndexName][sourceStatistic.SeqInIndex] = sourceStatistic
+                    } else {
+                        sourceSeqInIndexStatisticMap := make(map[int]Statistic)
+                        sourceSeqInIndexStatisticMap[sourceStatistic.SeqInIndex] = sourceStatistic
+                        sourceStatisticsDataMap[sourceStatistic.IndexName] = sourceSeqInIndexStatisticMap
+                    }
+                }
 
-					// DROP INDEX ... AND ADD KEY ...
-					for sourceIndexName, sourceStatisticMap := range sourceStatisticsDataMap {
-						if _, ok := targetStatisticsDataMap[sourceIndexName]; ok {
-							if !compareStatisticsIndex(sourceStatisticMap, targetStatisticsDataMap[sourceIndexName]) {
-								// DROP INDEX ...
-								if "PRIMARY" == sourceIndexName {
-									alterKeySql = append(alterKeySql, "  DROP PRIMARY KEY")
-								} else {
-									alterKeySql = append(alterKeySql, fmt.Sprintf("  DROP INDEX `%s`", sourceIndexName))
-								}
+                for _, targetStatistic := range targetStatisticsData {
+                    if _, ok := targetStatisticsDataMap[targetStatistic.IndexName]; ok {
+                        targetStatisticsDataMap[targetStatistic.IndexName][targetStatistic.SeqInIndex] = targetStatistic
+                    } else {
+                        targetSeqInIndexStatisticMap := make(map[int]Statistic)
+                        targetSeqInIndexStatisticMap[targetStatistic.SeqInIndex] = targetStatistic
+                        targetStatisticsDataMap[targetStatistic.IndexName] = targetSeqInIndexStatisticMap
+                    }
+                }
 
-								// ADD KEY ...
-								alterKeySql = append(alterKeySql, fmt.Sprintf("  ADD %s", getAddKeys(sourceIndexName, sourceStatisticMap)))
-							}
-						} else {
-							// ADD KEY ...
-							alterKeySql = append(alterKeySql, fmt.Sprintf("  ADD %s", getAddKeys(sourceIndexName, sourceStatisticMap)))
-						}
-					}
+                if !compareStatistics(sourceStatisticsDataMap, targetStatisticsDataMap) {
+                    if len(alterTableSql) <= 0 {
+                        alterTableSql = append(alterTableSql, fmt.Sprintf("ALTER TABLE `%s`", sourceTable.TableName))
+                    }
 
-					if len(alterKeySql) > 0 {
-						for _, keySql := range alterKeySql {
-							alterColumnSql = append(alterColumnSql, keySql)
-						}
-					}
-				}
-			}
+                    // DROP INDEX ...
+                    for targetIndexName := range targetStatisticsDataMap {
+                        if _, ok := sourceStatisticsDataMap[targetIndexName]; !ok {
+                            if "PRIMARY" == targetIndexName {
+                                alterKeySql = append(alterKeySql, "  DROP PRIMARY KEY")
+                            } else {
+                                alterKeySql = append(alterKeySql, fmt.Sprintf("  DROP INDEX `%s`", targetIndexName))
+                            }
+                        }
+                    }
 
-			// ALTER TABLE SQL ...
-			alterColumnSqlLen := len(alterColumnSql)
+                    // DROP INDEX ... AND ADD KEY ...
+                    for sourceIndexName, sourceStatisticMap := range sourceStatisticsDataMap {
+                        if _, ok := targetStatisticsDataMap[sourceIndexName]; ok {
+                            if !compareStatisticsIndex(sourceStatisticMap, targetStatisticsDataMap[sourceIndexName]) {
+                                // DROP INDEX ...
+                                if "PRIMARY" == sourceIndexName {
+                                    alterKeySql = append(alterKeySql, "  DROP PRIMARY KEY")
+                                } else {
+                                    alterKeySql = append(alterKeySql, fmt.Sprintf("  DROP INDEX `%s`", sourceIndexName))
+                                }
 
-			if alterColumnSqlLen > 0 {
-				for _, alterColumn := range alterColumnSql {
-					var columnDot = ""
-					if alterColumn == alterColumnSql[alterColumnSqlLen-1] {
-						columnDot = ";"
-					} else {
-						columnDot = ","
-					}
+                                // ADD KEY ...
+                                alterKeySql = append(alterKeySql, fmt.Sprintf("  ADD %s", getAddKeys(sourceIndexName, sourceStatisticMap)))
+                            }
+                        } else {
+                            // ADD KEY ...
+                            alterKeySql = append(alterKeySql, fmt.Sprintf("  ADD %s", getAddKeys(sourceIndexName, sourceStatisticMap)))
+                        }
+                    }
 
-					alterTableSql = append(alterTableSql, fmt.Sprintf("%s%s", alterColumn, columnDot))
-				}
-			}
+                    if len(alterKeySql) > 0 {
+                        for _, keySql := range alterKeySql {
+                            alterColumnSql = append(alterColumnSql, keySql)
+                        }
+                    }
+                }
+            }
 
-			alterTableSqlLen := len(alterTableSql)
+            // ALTER TABLE SQL ...
+            alterColumnSqlLen := len(alterColumnSql)
 
-			if alterTableSqlLen > 0 {
-				lock.Lock()
+            if alterColumnSqlLen > 0 {
+                for _, alterColumn := range alterColumnSql {
+                    var columnDot = ""
+                    if alterColumn == alterColumnSql[alterColumnSqlLen-1] {
+                        columnDot = ";"
+                    } else {
+                        columnDot = ","
+                    }
 
-				diffSqlKeys = append(diffSqlKeys, sourceTable.TableName)
-				diffSqlMap[sourceTable.TableName] = strings.Join(alterTableSql, "\n")
+                    alterTableSql = append(alterTableSql, fmt.Sprintf("%s%s", alterColumn, columnDot))
+                }
+            }
 
-				lock.Unlock()
-			}
-		} else {
-			// CREATE TABLE ...
-			var (
-				sourceColumnData []Column
-			)
+            alterTableSqlLen := len(alterTableSql)
 
-			sourceDb.Table("COLUMNS").Order("`ORDINAL_POSITION` ASC").Find(
-				&sourceColumnData,
-				"`TABLE_SCHEMA` = ? AND `TABLE_NAME` = ?",
-				sourceDbConfig.Database, sourceTable.TableName,
-			)
+            if alterTableSqlLen > 0 {
+                lock.Lock()
 
-			sourceColumnDataLen := len(sourceColumnData)
+                diffSqlKeys = append(diffSqlKeys, sourceTable.TableName)
+                diffSqlMap[sourceTable.TableName] = strings.Join(alterTableSql, "\n")
 
-			if sourceColumnDataLen > 0 {
-				var sourceStatisticsData []Statistic
+                lock.Unlock()
+            }
+        } else {
+            // CREATE TABLE ...
+            var (
+                sourceColumnData []Column
+            )
 
-				sourceDb.Table("STATISTICS").Find(
-					&sourceStatisticsData,
-					"`TABLE_SCHEMA` = ? AND `TABLE_NAME` = ?",
-					sourceDbConfig.Database, sourceTable.TableName,
-				)
+            sourceDb.Table("COLUMNS").Order("`ORDINAL_POSITION` ASC").Find(
+                &sourceColumnData,
+                "`TABLE_SCHEMA` = ? AND `TABLE_NAME` = ?",
+                sourceDbConfig.Database, sourceTable.TableName,
+            )
 
-				var createTableSql []string
+            sourceColumnDataLen := len(sourceColumnData)
 
-				createTableSql = append(createTableSql, fmt.Sprintf("CREATE TABLE IF NOT EXISTS `%s` (", sourceTable.TableName))
+            if sourceColumnDataLen > 0 {
+                var sourceStatisticsData []Statistic
 
-				// COLUMNS ...
-				for _, sourceColumn := range sourceColumnData {
-					var (
-						dot = ""
-					)
+                sourceDb.Table("STATISTICS").Find(
+                    &sourceStatisticsData,
+                    "`TABLE_SCHEMA` = ? AND `TABLE_NAME` = ?",
+                    sourceDbConfig.Database, sourceTable.TableName,
+                )
 
-					if sourceColumn != sourceColumnData[sourceColumnDataLen-1] || len(sourceStatisticsData) > 0 {
-						dot = ","
-					}
+                var createTableSql []string
 
-					createTableSql = append(createTableSql, fmt.Sprintf("  `%s` %s%s%s%s%s",
-						sourceColumn.ColumnName, sourceColumn.ColumnType,
-						getCharacterSet(sourceColumn, sourceSchema),
-						getColumnNullAbleDefault(sourceColumn),
-						getColumnExtra(sourceColumn), dot,
-					))
-				}
+                createTableSql = append(createTableSql, fmt.Sprintf("CREATE TABLE IF NOT EXISTS `%s` (", sourceTable.TableName))
 
-				// KEY ...
-				var createKeySql []string
-				sourceStatisticsLen := len(sourceStatisticsData)
+                // COLUMNS ...
+                for _, sourceColumn := range sourceColumnData {
+                    var (
+                        dot = ""
+                    )
 
-				if sourceStatisticsLen > 0 {
-					var sourceStatisticIndexNameArray []string
-					sourceStatisticsDataMap := make(map[string]map[int]Statistic)
+                    if sourceColumn != sourceColumnData[sourceColumnDataLen-1] || len(sourceStatisticsData) > 0 {
+                        dot = ","
+                    }
 
-					for _, sourceStatistic := range sourceStatisticsData {
-						if _, ok := sourceStatisticsDataMap[sourceStatistic.IndexName]; ok {
-							sourceStatisticsDataMap[sourceStatistic.IndexName][sourceStatistic.SeqInIndex] = sourceStatistic
-						} else {
-							sourceSeqInIndexStatisticMap := make(map[int]Statistic)
-							sourceSeqInIndexStatisticMap[sourceStatistic.SeqInIndex] = sourceStatistic
-							sourceStatisticsDataMap[sourceStatistic.IndexName] = sourceSeqInIndexStatisticMap
-						}
+                    createTableSql = append(createTableSql, fmt.Sprintf("  `%s` %s%s%s%s%s",
+                        sourceColumn.ColumnName, sourceColumn.ColumnType,
+                        getCharacterSet(sourceColumn, sourceSchema),
+                        getColumnNullAbleDefault(sourceColumn),
+                        getColumnExtra(sourceColumn), dot,
+                    ))
+                }
 
-						if !inArray(sourceStatistic.IndexName, sourceStatisticIndexNameArray) {
-							sourceStatisticIndexNameArray = append(sourceStatisticIndexNameArray, sourceStatistic.IndexName)
-						}
-					}
+                // KEY ...
+                var createKeySql []string
+                sourceStatisticsLen := len(sourceStatisticsData)
 
-					for _, sourceIndexName := range sourceStatisticIndexNameArray {
-						createKeySql = append(createKeySql, fmt.Sprintf("  %s", getAddKeys(sourceIndexName, sourceStatisticsDataMap[sourceIndexName])))
-					}
-				}
+                if sourceStatisticsLen > 0 {
+                    var sourceStatisticIndexNameArray []string
+                    sourceStatisticsDataMap := make(map[string]map[int]Statistic)
 
-				createTableSql = append(createTableSql, strings.Join(createKeySql, ",\n"))
-				createTableSql = append(createTableSql, fmt.Sprintf(") ENGINE=%s DEFAULT CHARSET=%s;", sourceTable.ENGINE.String, sourceSchema.DefaultCharacterSetName))
+                    for _, sourceStatistic := range sourceStatisticsData {
+                        if _, ok := sourceStatisticsDataMap[sourceStatistic.IndexName]; ok {
+                            sourceStatisticsDataMap[sourceStatistic.IndexName][sourceStatistic.SeqInIndex] = sourceStatistic
+                        } else {
+                            sourceSeqInIndexStatisticMap := make(map[int]Statistic)
+                            sourceSeqInIndexStatisticMap[sourceStatistic.SeqInIndex] = sourceStatistic
+                            sourceStatisticsDataMap[sourceStatistic.IndexName] = sourceSeqInIndexStatisticMap
+                        }
 
-				lock.Lock()
+                        if !inArray(sourceStatistic.IndexName, sourceStatisticIndexNameArray) {
+                            sourceStatisticIndexNameArray = append(sourceStatisticIndexNameArray, sourceStatistic.IndexName)
+                        }
+                    }
 
-				diffSqlKeys = append(diffSqlKeys, sourceTable.TableName)
-				diffSqlMap[sourceTable.TableName] = strings.Join(createTableSql, "\n")
+                    for _, sourceIndexName := range sourceStatisticIndexNameArray {
+                        createKeySql = append(createKeySql, fmt.Sprintf("  %s", getAddKeys(sourceIndexName, sourceStatisticsDataMap[sourceIndexName])))
+                    }
+                }
 
-				lock.Unlock()
-			}
-		}
-	case "VIEW":
-		var (
-			sourceView View
-			targetView View
-		)
+                createTableSql = append(createTableSql, strings.Join(createKeySql, ",\n"))
+                createTableSql = append(createTableSql, fmt.Sprintf(") ENGINE=%s DEFAULT CHARSET=%s;", sourceTable.ENGINE.String, sourceSchema.DefaultCharacterSetName))
 
-		sourceDb.Table("VIEWS").First(
-			&sourceView,
-			"`TABLE_SCHEMA` = ? AND `TABLE_NAME` = ?",
-			sourceDbConfig.Database, sourceTable.TableName,
-		)
+                lock.Lock()
 
-		sourceView.ViewDefinition = strings.Replace(sourceView.ViewDefinition, fmt.Sprintf("`%s`.", sourceDbConfig.Database), "", -1)
+                diffSqlKeys = append(diffSqlKeys, sourceTable.TableName)
+                diffSqlMap[sourceTable.TableName] = strings.Join(createTableSql, "\n")
 
-		if _, ok := targetTableMap[sourceTable.TableName]; ok {
-			// CREATE OR REPLACE ...
-			targetDb.Table("VIEWS").First(
-				&targetView,
-				"`TABLE_SCHEMA` = ? AND `TABLE_NAME` = ?",
-				targetDbConfig.Database, sourceTable.TableName,
-			)
+                lock.Unlock()
+            }
+        }
+    case "VIEW":
+        var (
+            sourceView View
+            targetView View
+        )
 
-			targetView.ViewDefinition = strings.Replace(targetView.ViewDefinition, fmt.Sprintf("`%s`.", targetDbConfig.Database), "", -1)
+        sourceDb.Table("VIEWS").First(
+            &sourceView,
+            "`TABLE_SCHEMA` = ? AND `TABLE_NAME` = ?",
+            sourceDbConfig.Database, sourceTable.TableName,
+        )
 
-			if sourceView.ViewDefinition != targetView.ViewDefinition {
-				lock.Lock()
+        sourceView.ViewDefinition = strings.Replace(sourceView.ViewDefinition, fmt.Sprintf("`%s`.", sourceDbConfig.Database), "", -1)
 
-				diffSqlKeys = append(diffSqlKeys, sourceTable.TableName)
-				diffSqlMap[sourceTable.TableName] = fmt.Sprintf("CREATE OR REPLACE ALGORITHM = UNDEFINED SQL SECURITY %s VIEW `%s` AS %s;",
-					sourceView.SecurityType,
-					sourceView.TableName,
-					sourceView.ViewDefinition,
-				)
+        if _, ok := targetTableMap[sourceTable.TableName]; ok {
+            // CREATE OR REPLACE ...
+            targetDb.Table("VIEWS").First(
+                &targetView,
+                "`TABLE_SCHEMA` = ? AND `TABLE_NAME` = ?",
+                targetDbConfig.Database, sourceTable.TableName,
+            )
 
-				lock.Unlock()
-			}
-		} else {
-			lock.Lock()
+            targetView.ViewDefinition = strings.Replace(targetView.ViewDefinition, fmt.Sprintf("`%s`.", targetDbConfig.Database), "", -1)
 
-			// CREATE ...
-			diffSqlKeys = append(diffSqlKeys, sourceTable.TableName)
-			diffSqlMap[sourceTable.TableName] = fmt.Sprintf("CREATE ALGORITHM = UNDEFINED SQL SECURITY %s VIEW `%s` AS %s;",
-				sourceView.SecurityType,
-				sourceView.TableName,
-				sourceView.ViewDefinition,
-			)
+            if sourceView.ViewDefinition != targetView.ViewDefinition {
+                lock.Lock()
 
-			lock.Unlock()
-		}
-	}
+                diffSqlKeys = append(diffSqlKeys, sourceTable.TableName)
+                diffSqlMap[sourceTable.TableName] = fmt.Sprintf("CREATE OR REPLACE ALGORITHM = UNDEFINED SQL SECURITY %s VIEW `%s` AS %s;",
+                    sourceView.SecurityType,
+                    sourceView.TableName,
+                    sourceView.ViewDefinition,
+                )
 
-	defer wg.Done()
+                lock.Unlock()
+            }
+        } else {
+            lock.Lock()
+
+            // CREATE ...
+            diffSqlKeys = append(diffSqlKeys, sourceTable.TableName)
+            diffSqlMap[sourceTable.TableName] = fmt.Sprintf("CREATE ALGORITHM = UNDEFINED SQL SECURITY %s VIEW `%s` AS %s;",
+                sourceView.SecurityType,
+                sourceView.TableName,
+                sourceView.ViewDefinition,
+            )
+
+            lock.Unlock()
+        }
+    }
+
+    <-ch
 }
 
 func getColumnNullAbleDefault(column Column) string {
-	var nullAbleDefault = ""
+    var nullAbleDefault = ""
 
-	if column.IsNullable == "NO" {
-		if column.ColumnDefault.Valid {
-			if inArray(column.DataType, []string{"timestamp", "datetime"}) {
-				nullAbleDefault = fmt.Sprintf(" NOT NULL DEFAULT %s", column.ColumnDefault.String)
-			} else {
-				nullAbleDefault = fmt.Sprintf(" NOT NULL DEFAULT '%s'", column.ColumnDefault.String)
-			}
-		} else {
-			nullAbleDefault = " NOT NULL"
-		}
-	} else {
-		if column.ColumnDefault.Valid {
-			if inArray(column.DataType, []string{"timestamp", "datetime"}) {
-				nullAbleDefault = fmt.Sprintf(" NULL DEFAULT %s", column.ColumnDefault.String)
-			} else {
-				nullAbleDefault = fmt.Sprintf(" DEFAULT '%s'", column.ColumnDefault.String)
-			}
-		} else {
-			nullAbleDefault = " DEFAULT NULL"
-		}
-	}
+    if column.IsNullable == "NO" {
+        if column.ColumnDefault.Valid {
+            if inArray(column.DataType, []string{"timestamp", "datetime"}) {
+                nullAbleDefault = fmt.Sprintf(" NOT NULL DEFAULT %s", column.ColumnDefault.String)
+            } else {
+                nullAbleDefault = fmt.Sprintf(" NOT NULL DEFAULT '%s'", column.ColumnDefault.String)
+            }
+        } else {
+            nullAbleDefault = " NOT NULL"
+        }
+    } else {
+        if column.ColumnDefault.Valid {
+            if inArray(column.DataType, []string{"timestamp", "datetime"}) {
+                nullAbleDefault = fmt.Sprintf(" NULL DEFAULT %s", column.ColumnDefault.String)
+            } else {
+                nullAbleDefault = fmt.Sprintf(" DEFAULT '%s'", column.ColumnDefault.String)
+            }
+        } else {
+            nullAbleDefault = " DEFAULT NULL"
+        }
+    }
 
-	return nullAbleDefault
+    return nullAbleDefault
 }
 
 func getAddKeys(indexName string, statisticMap map[int]Statistic) string {
-	if 1 == statisticMap[1].NonUnique {
-		var seqInIndexSort []int
-		var columnNames []string
+    if 1 == statisticMap[1].NonUnique {
+        var seqInIndexSort []int
+        var columnNames []string
 
-		for seqInIndex := range statisticMap {
-			seqInIndexSort = append(seqInIndexSort, seqInIndex)
-		}
+        for seqInIndex := range statisticMap {
+            seqInIndexSort = append(seqInIndexSort, seqInIndex)
+        }
 
-		sort.Ints(seqInIndexSort)
+        sort.Ints(seqInIndexSort)
 
-		for _, seqInIndex := range seqInIndexSort {
-			var subPart = ""
+        for _, seqInIndex := range seqInIndexSort {
+            var subPart = ""
 
-			if statisticMap[seqInIndex].SubPart.Valid {
-				subPart = fmt.Sprintf("(%d)", statisticMap[seqInIndex].SubPart.Int32)
-			}
+            if statisticMap[seqInIndex].SubPart.Valid {
+                subPart = fmt.Sprintf("(%d)", statisticMap[seqInIndex].SubPart.Int32)
+            }
 
-			columnNames = append(columnNames, fmt.Sprintf("`%s`%s", statisticMap[seqInIndex].ColumnName, subPart))
-		}
+            columnNames = append(columnNames, fmt.Sprintf("`%s`%s", statisticMap[seqInIndex].ColumnName, subPart))
+        }
 
-		return fmt.Sprintf("KEY `%s` (%s)", indexName, strings.Join(columnNames, ","))
-	} else {
-		if "PRIMARY" == indexName {
-			var seqInIndexSort []int
-			var columnNames []string
+        return fmt.Sprintf("KEY `%s` (%s)", indexName, strings.Join(columnNames, ","))
+    } else {
+        if "PRIMARY" == indexName {
+            var seqInIndexSort []int
+            var columnNames []string
 
-			for seqInIndex := range statisticMap {
-				seqInIndexSort = append(seqInIndexSort, seqInIndex)
-			}
+            for seqInIndex := range statisticMap {
+                seqInIndexSort = append(seqInIndexSort, seqInIndex)
+            }
 
-			sort.Ints(seqInIndexSort)
+            sort.Ints(seqInIndexSort)
 
-			for _, seqInIndex := range seqInIndexSort {
-				var subPart = ""
+            for _, seqInIndex := range seqInIndexSort {
+                var subPart = ""
 
-				if statisticMap[seqInIndex].SubPart.Valid {
-					subPart = fmt.Sprintf("(%d)", statisticMap[seqInIndex].SubPart.Int32)
-				}
+                if statisticMap[seqInIndex].SubPart.Valid {
+                    subPart = fmt.Sprintf("(%d)", statisticMap[seqInIndex].SubPart.Int32)
+                }
 
-				columnNames = append(columnNames, fmt.Sprintf("`%s`%s", statisticMap[seqInIndex].ColumnName, subPart))
-			}
+                columnNames = append(columnNames, fmt.Sprintf("`%s`%s", statisticMap[seqInIndex].ColumnName, subPart))
+            }
 
-			return fmt.Sprintf("PRIMARY KEY (%s)", strings.Join(columnNames, ","))
-		} else {
-			var seqInIndexSort []int
-			var columnNames []string
+            return fmt.Sprintf("PRIMARY KEY (%s)", strings.Join(columnNames, ","))
+        } else {
+            var seqInIndexSort []int
+            var columnNames []string
 
-			for seqInIndex := range statisticMap {
-				seqInIndexSort = append(seqInIndexSort, seqInIndex)
-			}
+            for seqInIndex := range statisticMap {
+                seqInIndexSort = append(seqInIndexSort, seqInIndex)
+            }
 
-			sort.Ints(seqInIndexSort)
+            sort.Ints(seqInIndexSort)
 
-			for _, seqInIndex := range seqInIndexSort {
-				var subPart = ""
+            for _, seqInIndex := range seqInIndexSort {
+                var subPart = ""
 
-				if statisticMap[seqInIndex].SubPart.Valid {
-					subPart = fmt.Sprintf("(%d)", statisticMap[seqInIndex].SubPart.Int32)
-				}
+                if statisticMap[seqInIndex].SubPart.Valid {
+                    subPart = fmt.Sprintf("(%d)", statisticMap[seqInIndex].SubPart.Int32)
+                }
 
-				columnNames = append(columnNames, fmt.Sprintf("`%s`%s", statisticMap[seqInIndex].ColumnName, subPart))
-			}
+                columnNames = append(columnNames, fmt.Sprintf("`%s`%s", statisticMap[seqInIndex].ColumnName, subPart))
+            }
 
-			return fmt.Sprintf("UNIQUE KEY `%s` (%s)", indexName, strings.Join(columnNames, ","))
-		}
-	}
+            return fmt.Sprintf("UNIQUE KEY `%s` (%s)", indexName, strings.Join(columnNames, ","))
+        }
+    }
 }
 
 func compareColumns(sourceColumnsPos map[int]Column, targetColumnsPos map[int]Column) bool {
-	if len(sourceColumnsPos) != len(targetColumnsPos) {
-		return false
-	} else {
-		for sourcePos, sourceColumn := range sourceColumnsPos {
-			if _, ok := targetColumnsPos[sourcePos]; ok {
-				targetColumn := targetColumnsPos[sourcePos]
+    if len(sourceColumnsPos) != len(targetColumnsPos) {
+        return false
+    } else {
+        for sourcePos, sourceColumn := range sourceColumnsPos {
+            if _, ok := targetColumnsPos[sourcePos]; ok {
+                targetColumn := targetColumnsPos[sourcePos]
 
-				if !compareColumn(sourceColumn, targetColumn) {
-					return false
-				}
-			} else {
-				return false
-			}
+                if !compareColumn(sourceColumn, targetColumn) {
+                    return false
+                }
+            } else {
+                return false
+            }
 
-		}
-	}
+        }
+    }
 
-	return true
+    return true
 }
 
 func compareColumn(sourceColumn Column, targetColumn Column) bool {
-	if sourceColumn.ColumnName != targetColumn.ColumnName {
-		return false
-	}
+    if sourceColumn.ColumnName != targetColumn.ColumnName {
+        return false
+    }
 
-	if sourceColumn.OrdinalPosition != targetColumn.OrdinalPosition {
-		return false
-	}
+    if sourceColumn.OrdinalPosition != targetColumn.OrdinalPosition {
+        return false
+    }
 
-	if sourceColumn.ColumnDefault != targetColumn.ColumnDefault {
-		return false
-	}
+    if sourceColumn.ColumnDefault != targetColumn.ColumnDefault {
+        return false
+    }
 
-	if sourceColumn.IsNullable != targetColumn.IsNullable {
-		return false
-	}
+    if sourceColumn.IsNullable != targetColumn.IsNullable {
+        return false
+    }
 
-	if sourceColumn.DataType != targetColumn.DataType {
-		return false
-	}
+    if sourceColumn.DataType != targetColumn.DataType {
+        return false
+    }
 
-	if sourceColumn.CharacterMaximumLength != targetColumn.CharacterMaximumLength {
-		return false
-	}
+    if sourceColumn.CharacterMaximumLength != targetColumn.CharacterMaximumLength {
+        return false
+    }
 
-	//禁用实际精度检验，因为 TiDB 和 MySQL 在设置不标准的情况下，值会不一样。
-	//if sourceColumn.NumericPrecision != targetColumn.NumericPrecision {
-	//	return false
-	//}
+    //禁用实际精度检验，因为 TiDB 和 MySQL 在设置不标准的情况下，值会不一样。
+    //if sourceColumn.NumericPrecision != targetColumn.NumericPrecision {
+    //	return false
+    //}
 
-	if sourceColumn.NumericScale != targetColumn.NumericScale {
-		return false
-	}
+    if sourceColumn.NumericScale != targetColumn.NumericScale {
+        return false
+    }
 
-	if sourceColumn.DatetimePrecision != targetColumn.DatetimePrecision {
-		return false
-	}
+    if sourceColumn.DatetimePrecision != targetColumn.DatetimePrecision {
+        return false
+    }
 
-	if sourceColumn.CharacterSetName != targetColumn.CharacterSetName {
-		return false
-	}
+    if sourceColumn.CharacterSetName != targetColumn.CharacterSetName {
+        return false
+    }
 
-	if sourceColumn.CollationName != targetColumn.CollationName {
-		return false
-	}
+    if sourceColumn.CollationName != targetColumn.CollationName {
+        return false
+    }
 
-	if sourceColumn.ColumnType != targetColumn.ColumnType {
-		return false
-	}
+    if sourceColumn.ColumnType != targetColumn.ColumnType {
+        return false
+    }
 
-	if sourceColumn.EXTRA != targetColumn.EXTRA {
-		return false
-	}
+    if sourceColumn.EXTRA != targetColumn.EXTRA {
+        return false
+    }
 
-	return true
+    return true
 }
 
 func compareStatistics(sourceStatisticsMap map[string]map[int]Statistic, targetStatisticsMap map[string]map[int]Statistic) bool {
-	if len(sourceStatisticsMap) != len(targetStatisticsMap) {
-		return false
-	} else {
-		for indexName, sourceStatisticMap := range sourceStatisticsMap {
-			if _, ok := targetStatisticsMap[indexName]; ok {
-				if len(sourceStatisticMap) != len(targetStatisticsMap[indexName]) {
-					return false
-				} else {
-					for seqInIndex, sourceStatistic := range sourceStatisticMap {
-						if _, ok := targetStatisticsMap[indexName][seqInIndex]; ok {
-							targetStatistic := targetStatisticsMap[indexName][seqInIndex]
+    if len(sourceStatisticsMap) != len(targetStatisticsMap) {
+        return false
+    } else {
+        for indexName, sourceStatisticMap := range sourceStatisticsMap {
+            if _, ok := targetStatisticsMap[indexName]; ok {
+                if len(sourceStatisticMap) != len(targetStatisticsMap[indexName]) {
+                    return false
+                } else {
+                    for seqInIndex, sourceStatistic := range sourceStatisticMap {
+                        if _, ok := targetStatisticsMap[indexName][seqInIndex]; ok {
+                            targetStatistic := targetStatisticsMap[indexName][seqInIndex]
 
-							if !compareStatistic(sourceStatistic, targetStatistic) {
-								return false
-							}
-						} else {
-							return false
-						}
-					}
-				}
-			} else {
-				return false
-			}
-		}
-	}
+                            if !compareStatistic(sourceStatistic, targetStatistic) {
+                                return false
+                            }
+                        } else {
+                            return false
+                        }
+                    }
+                }
+            } else {
+                return false
+            }
+        }
+    }
 
-	return true
+    return true
 }
 
 func compareStatisticsIndex(sourceStatisticMap map[int]Statistic, targetStatisticMap map[int]Statistic) bool {
-	if len(sourceStatisticMap) != len(targetStatisticMap) {
-		return false
-	} else {
-		for seqInIndex, sourceStatistic := range sourceStatisticMap {
-			if _, ok := targetStatisticMap[seqInIndex]; ok {
-				targetStatistic := targetStatisticMap[seqInIndex]
+    if len(sourceStatisticMap) != len(targetStatisticMap) {
+        return false
+    } else {
+        for seqInIndex, sourceStatistic := range sourceStatisticMap {
+            if _, ok := targetStatisticMap[seqInIndex]; ok {
+                targetStatistic := targetStatisticMap[seqInIndex]
 
-				if !compareStatistic(sourceStatistic, targetStatistic) {
-					return false
-				}
-			} else {
-				return false
-			}
-		}
-	}
+                if !compareStatistic(sourceStatistic, targetStatistic) {
+                    return false
+                }
+            } else {
+                return false
+            }
+        }
+    }
 
-	return true
+    return true
 }
 
 func compareStatistic(sourceStatistic Statistic, targetStatistic Statistic) bool {
-	if sourceStatistic.NonUnique != targetStatistic.NonUnique {
-		return false
-	}
+    if sourceStatistic.NonUnique != targetStatistic.NonUnique {
+        return false
+    }
 
-	if sourceStatistic.IndexName != targetStatistic.IndexName {
-		return false
-	}
+    if sourceStatistic.IndexName != targetStatistic.IndexName {
+        return false
+    }
 
-	if sourceStatistic.SeqInIndex != targetStatistic.SeqInIndex {
-		return false
-	}
+    if sourceStatistic.SeqInIndex != targetStatistic.SeqInIndex {
+        return false
+    }
 
-	if sourceStatistic.ColumnName != targetStatistic.ColumnName {
-		return false
-	}
+    if sourceStatistic.ColumnName != targetStatistic.ColumnName {
+        return false
+    }
 
-	if sourceStatistic.SubPart != targetStatistic.SubPart {
-		return false
-	}
+    if sourceStatistic.SubPart != targetStatistic.SubPart {
+        return false
+    }
 
-	if sourceStatistic.IndexType != targetStatistic.IndexType {
-		return false
-	}
+    if sourceStatistic.IndexType != targetStatistic.IndexType {
+        return false
+    }
 
-	return true
+    return true
 }
 
 func resetCalcPosition(columnName string, sourcePos int, targetColumns map[string]Column, status int) {
-	switch status {
-	case 1:
-		// ADD ...
-		for targetColumnName, targetColumn := range targetColumns {
-			if targetColumn.OrdinalPosition >= sourcePos {
-				targetColumn.OrdinalPosition += 1
+    switch status {
+    case 1:
+        // ADD ...
+        for targetColumnName, targetColumn := range targetColumns {
+            if targetColumn.OrdinalPosition >= sourcePos {
+                targetColumn.OrdinalPosition += 1
 
-				targetColumns[targetColumnName] = targetColumn
-			}
-		}
-		break
-	case 2:
-		// MODIFY ...
-		if _, ok := targetColumns[columnName]; ok {
-			targetColumn := targetColumns[columnName]
+                targetColumns[targetColumnName] = targetColumn
+            }
+        }
+        break
+    case 2:
+        // MODIFY ...
+        if _, ok := targetColumns[columnName]; ok {
+            targetColumn := targetColumns[columnName]
 
-			targetColumn.OrdinalPosition = sourcePos
+            targetColumn.OrdinalPosition = sourcePos
 
-			targetColumns[columnName] = targetColumn
-		}
-		break
-	case 3:
-		// DROP ...
-		for targetColumnName, targetColumn := range targetColumns {
-			if targetColumn.OrdinalPosition >= sourcePos {
-				targetColumn.OrdinalPosition -= 1
+            targetColumns[columnName] = targetColumn
+        }
+        break
+    case 3:
+        // DROP ...
+        for targetColumnName, targetColumn := range targetColumns {
+            if targetColumn.OrdinalPosition >= sourcePos {
+                targetColumn.OrdinalPosition -= 1
 
-				targetColumns[targetColumnName] = targetColumn
-			}
-		}
-		break
-	}
+                targetColumns[targetColumnName] = targetColumn
+            }
+        }
+        break
+    }
 }
 
 func getColumnAfter(ordinalPosition int, columnsPos map[int]Column) string {
-	pos := ordinalPosition - 1
+    pos := ordinalPosition - 1
 
-	if _, ok := columnsPos[pos]; ok {
-		return fmt.Sprintf("AFTER `%s`", columnsPos[pos].ColumnName)
-	} else {
-		return "FIRST"
-	}
+    if _, ok := columnsPos[pos]; ok {
+        return fmt.Sprintf("AFTER `%s`", columnsPos[pos].ColumnName)
+    } else {
+        return "FIRST"
+    }
 }
 
 func getCharacterSet(column Column, schema Schema) string {
-	if column.CharacterSetName.Valid {
-		if column.CharacterSetName.String != schema.DefaultCharacterSetName {
-			return fmt.Sprintf(" CHARACTER SET %s", column.CharacterSetName.String)
-		}
-	}
+    if column.CharacterSetName.Valid {
+        if column.CharacterSetName.String != schema.DefaultCharacterSetName {
+            return fmt.Sprintf(" CHARACTER SET %s", column.CharacterSetName.String)
+        }
+    }
 
-	return ""
+    return ""
 }
 
 func getColumnExtra(column Column) string {
-	extra := strings.TrimSpace(strings.Replace(strings.ToUpper(column.EXTRA), "DEFAULT_GENERATED", "", 1))
+    extra := strings.TrimSpace(strings.Replace(strings.ToUpper(column.EXTRA), "DEFAULT_GENERATED", "", 1))
 
-	if extra != "" {
-		return fmt.Sprintf(" %s", extra)
-	}
+    if extra != "" {
+        return fmt.Sprintf(" %s", extra)
+    }
 
-	return ""
+    return ""
 }
 
 func inArray(need string, needArr []string) bool {
-	for _, v := range needArr {
-		if need == v {
-			return true
-		}
-	}
-	return false
+    for _, v := range needArr {
+        if need == v {
+            return true
+        }
+    }
+    return false
 }
