@@ -152,7 +152,7 @@ var (
     rootCmd = &cobra.Command{
         Use:     "mysqldiff",
         Short:   "差异 SQL 工具。",
-        Version: "v1.0.2",
+        Version: "v3.0.1",
         Run: func(cmd *cobra.Command, args []string) {
             sourceMatched, err1 := regexp.MatchString(HostPattern, source)
             dbMatched, err3 := regexp.MatchString(DbPattern, db)
@@ -307,6 +307,7 @@ var (
             defer close(ch)
 
             for _, sourceTable := range sourceTableData {
+                wg.Add(1)
                 go diff(sourceDbConfig, targetDbConfig, sourceDb, targetDb, sourceSchema, sourceTable, targetTableMap)
             }
 
@@ -335,8 +336,6 @@ var (
 
 func diff(sourceDbConfig DbConfig, targetDbConfig DbConfig, sourceDb *gorm.DB, targetDb *gorm.DB, sourceSchema Schema, sourceTable Table, targetTableMap map[string]Table) {
     defer wg.Done()
-
-    wg.Add(1)
 
     ch <- true
 
