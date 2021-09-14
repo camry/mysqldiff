@@ -128,6 +128,7 @@ func init() {
     rootCmd.Flags().StringVarP(&source, "source", "s", "", "指定源服务器。(格式: <user>:<password>@<host>:<port>)")
     rootCmd.Flags().StringVarP(&target, "target", "t", "", "指定目标服务器。(格式: <user>:<password>@<host>:<port>)")
     rootCmd.Flags().StringVarP(&db, "db", "d", "", "指定数据库。(格式: <source_db>:<target_db>)")
+    rootCmd.Flags().BoolVarP(&comment, "comment", "c", false, "是否生成注释？")
 
     cobra.CheckErr(rootCmd.MarkFlagRequired("source"))
     cobra.CheckErr(rootCmd.MarkFlagRequired("db"))
@@ -146,13 +147,14 @@ var (
     source      string
     target      string
     db          string
+    comment     bool
     diffSqlKeys []string
     diffSqlMap  = make(map[string]string)
 
     rootCmd = &cobra.Command{
         Use:     "mysqldiff",
         Short:   "差异 SQL 工具。",
-        Version: "v3.0.2",
+        Version: "v3.0.3",
         Run: func(cmd *cobra.Command, args []string) {
             sourceMatched, err1 := regexp.MatchString(HostPattern, source)
             dbMatched, err3 := regexp.MatchString(DbPattern, db)
@@ -402,12 +404,20 @@ func diff(sourceDbConfig DbConfig, targetDbConfig DbConfig, sourceDb *gorm.DB, t
                     // ADD COLUMN ...
                     for _, sourceColumn := range sourceColumnData {
                         if _, ok := targetColumns[sourceColumn.ColumnName]; !ok {
-                            alterColumnSql = append(alterColumnSql, fmt.Sprintf(
-                                "  ADD COLUMN `%s` %s%s%s%s %s",
+                            addSql := fmt.Sprintf(
+                                "  ADD COLUMN `%s` %s%s%s%s",
                                 sourceColumn.ColumnName, sourceColumn.ColumnType,
-                                getCharacterSet(sourceColumn, sourceSchema),
+                                getCharacterSet(sourceColumn, targetColumns[sourceColumn.ColumnName]),
                                 getColumnNullAbleDefault(sourceColumn),
                                 getColumnExtra(sourceColumn),
+                            )
+
+                            if comment {
+                                addSql = fmt.Sprintf("%s COMMENT '%s'", addSql, getColumnComment(sourceColumn.ColumnComment))
+                            }
+
+                            alterColumnSql = append(alterColumnSql, fmt.Sprintf("%s %s",
+                                addSql,
                                 getColumnAfter(sourceColumn.OrdinalPosition, sourceColumnsPos),
                             ))
 
@@ -423,15 +433,21 @@ func diff(sourceDbConfig DbConfig, targetDbConfig DbConfig, sourceDb *gorm.DB, t
                             targetColumn := targetColumns[columnName]
 
                             if !compareColumn(sourceColumn, targetColumn) {
-                                alterColumnSql = append(alterColumnSql,
-                                    fmt.Sprintf("  MODIFY COLUMN `%s` %s%s%s%s %s",
-                                        columnName, sourceColumn.ColumnType,
-                                        getCharacterSet(sourceColumn, sourceSchema),
-                                        getColumnNullAbleDefault(sourceColumn),
-                                        getColumnExtra(sourceColumn),
-                                        getColumnAfter(sourceColumn.OrdinalPosition, sourceColumnsPos),
-                                    ),
+                                modifySql := fmt.Sprintf("  MODIFY COLUMN `%s` %s%s%s%s",
+                                    columnName, sourceColumn.ColumnType,
+                                    getCharacterSet(sourceColumn, targetColumn),
+                                    getColumnNullAbleDefault(sourceColumn),
+                                    getColumnExtra(sourceColumn),
                                 )
+
+                                if comment {
+                                    modifySql = fmt.Sprintf("%s COMMENT '%s'", modifySql, getColumnComment(sourceColumn.ColumnComment))
+                                }
+
+                                alterColumnSql = append(alterColumnSql, fmt.Sprintf("%s %s",
+                                    modifySql,
+                                    getColumnAfter(sourceColumn.OrdinalPosition, sourceColumnsPos),
+                                ))
 
                                 resetCalcPosition(columnName, sourceColumn.OrdinalPosition, targetColumns, 2)
                             }
@@ -591,12 +607,18 @@ func diff(sourceDbConfig DbConfig, targetDbConfig DbConfig, sourceDb *gorm.DB, t
                         dot = ","
                     }
 
-                    createTableSql = append(createTableSql, fmt.Sprintf("  `%s` %s%s%s%s%s",
+                    createSql := fmt.Sprintf("  `%s` %s%s%s%s",
                         sourceColumn.ColumnName, sourceColumn.ColumnType,
-                        getCharacterSet(sourceColumn, sourceSchema),
+                        getCharacterSet(sourceColumn, sourceColumn),
                         getColumnNullAbleDefault(sourceColumn),
-                        getColumnExtra(sourceColumn), dot,
-                    ))
+                        getColumnExtra(sourceColumn),
+                    )
+
+                    if comment {
+                        createSql = fmt.Sprintf("%s COMMENT '%s'", createSql, getColumnComment(sourceColumn.ColumnComment))
+                    }
+
+                    createTableSql = append(createTableSql, fmt.Sprintf("%s%s", createSql, dot))
                 }
 
                 // KEY ...
@@ -627,7 +649,16 @@ func diff(sourceDbConfig DbConfig, targetDbConfig DbConfig, sourceDb *gorm.DB, t
                 }
 
                 createTableSql = append(createTableSql, strings.Join(createKeySql, ",\n"))
-                createTableSql = append(createTableSql, fmt.Sprintf(") ENGINE=%s DEFAULT CHARSET=%s;", sourceTable.ENGINE.String, sourceSchema.DefaultCharacterSetName))
+
+                cSql := ""
+
+                if comment {
+                    cSql = fmt.Sprintf(" COMMENT='%s'", getColumnComment(sourceTable.TableComment))
+                }
+
+                createTableSql = append(createTableSql, fmt.Sprintf(") ENGINE=%s DEFAULT CHARSET=%s%s;",
+                    sourceTable.ENGINE.String, sourceSchema.DefaultCharacterSetName, cSql,
+                ))
 
                 lock.Lock()
 
@@ -838,10 +869,10 @@ func compareColumn(sourceColumn Column, targetColumn Column) bool {
         return false
     }
 
-    //禁用实际精度检验，因为 TiDB 和 MySQL 在设置不标准的情况下，值会不一样。
-    //if sourceColumn.NumericPrecision != targetColumn.NumericPrecision {
+    // 禁用实际精度检验，因为 TiDB 和 MySQL 在设置不标准的情况下，值会不一样。
+    // if sourceColumn.NumericPrecision != targetColumn.NumericPrecision {
     //	return false
-    //}
+    // }
 
     if sourceColumn.NumericScale != targetColumn.NumericScale {
         return false
@@ -865,6 +896,12 @@ func compareColumn(sourceColumn Column, targetColumn Column) bool {
 
     if sourceColumn.EXTRA != targetColumn.EXTRA {
         return false
+    }
+
+    if comment {
+        if sourceColumn.ColumnComment != targetColumn.ColumnComment {
+            return false
+        }
     }
 
     return true
@@ -993,10 +1030,10 @@ func getColumnAfter(ordinalPosition int, columnsPos map[int]Column) string {
     }
 }
 
-func getCharacterSet(column Column, schema Schema) string {
-    if column.CharacterSetName.Valid {
-        if column.CharacterSetName.String != schema.DefaultCharacterSetName {
-            return fmt.Sprintf(" CHARACTER SET %s", column.CharacterSetName.String)
+func getCharacterSet(sourceColumn Column, targetColumn Column) string {
+    if sourceColumn.CharacterSetName.Valid {
+        if sourceColumn.CharacterSetName.String != targetColumn.CharacterSetName.String {
+            return fmt.Sprintf(" CHARACTER SET %s", sourceColumn.CharacterSetName.String)
         }
     }
 
@@ -1011,6 +1048,10 @@ func getColumnExtra(column Column) string {
     }
 
     return ""
+}
+
+func getColumnComment(columnComment string) string {
+    return strings.ReplaceAll(columnComment, "'", "\\'")
 }
 
 func inArray(need string, needArr []string) bool {
