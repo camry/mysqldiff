@@ -10,6 +10,7 @@ Golang 针对 MySQL 数据库表结构的差异 SQL 工具。
 # 实例
 ./mysqldiff --source user:password@host:port --db db1:db2
 ./mysqldiff --source user:password@host:port --target user:password@host:port --db db1:db2
+./mysqldiff --source user:password@host:port --target user:password@host:port --db db1:db2 --comment
 ```
 
 ## 自动补全
