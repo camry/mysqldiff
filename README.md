@@ -26,4 +26,3 @@ mysqldiff completion bash > /etc/bash_completion.d/mysqldiff && source /etc/bash
 ```bash
 ./install.bash
 ```
-
