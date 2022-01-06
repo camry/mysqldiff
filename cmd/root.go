@@ -738,6 +738,10 @@ func getColumnNullAbleDefault(column Column) string {
     } else {
         if column.ColumnDefault.Valid {
             if inArray(column.DataType, []string{"timestamp", "datetime"}) {
+                if column.ColumnDefault.String != "CURRENT_TIMESTAMP" {
+                    column.ColumnDefault.String = fmt.Sprintf("'%s'", column.ColumnDefault.String)
+                }
+
                 nullAbleDefault = fmt.Sprintf(" NULL DEFAULT %s", column.ColumnDefault.String)
             } else {
                 nullAbleDefault = fmt.Sprintf(" DEFAULT '%s'", column.ColumnDefault.String)
@@ -1032,7 +1036,7 @@ func getColumnAfter(ordinalPosition int, columnsPos map[int]Column) string {
 
 func getCharacterSet(sourceColumn Column, targetColumn Column) string {
     if sourceColumn.CharacterSetName.Valid {
-        if sourceColumn.CharacterSetName.String != targetColumn.CharacterSetName.String {
+        if sourceColumn.CharacterSetName.String != targetColumn.CharacterSetName.String || sourceColumn == targetColumn {
             return fmt.Sprintf(" CHARACTER SET %s", sourceColumn.CharacterSetName.String)
         }
     }
