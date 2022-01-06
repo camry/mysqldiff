@@ -154,7 +154,7 @@ var (
     rootCmd = &cobra.Command{
         Use:     "mysqldiff",
         Short:   "差异 SQL 工具。",
-        Version: "v3.0.3",
+        Version: "v3.0.4",
         Run: func(cmd *cobra.Command, args []string) {
             sourceMatched, err1 := regexp.MatchString(HostPattern, source)
             dbMatched, err3 := regexp.MatchString(DbPattern, db)
