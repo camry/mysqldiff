@@ -154,7 +154,7 @@ var (
     rootCmd = &cobra.Command{
         Use:     "mysqldiff",
         Short:   "差异 SQL 工具。",
-        Version: "v3.0.4",
+        Version: "v3.0.5",
         Run: func(cmd *cobra.Command, args []string) {
             sourceMatched, err1 := regexp.MatchString(HostPattern, source)
             dbMatched, err3 := regexp.MatchString(DbPattern, db)
@@ -762,6 +762,10 @@ func getColumnNullAbleDefault(column Column) string {
     if column.IsNullable == "NO" {
         if column.ColumnDefault.Valid {
             if inArray(column.DataType, []string{"timestamp", "datetime"}) {
+                if column.ColumnDefault.String != "CURRENT_TIMESTAMP" {
+                    column.ColumnDefault.String = fmt.Sprintf("'%s'", column.ColumnDefault.String)
+                }
+
                 nullAbleDefault = fmt.Sprintf(" NOT NULL DEFAULT %s", column.ColumnDefault.String)
             } else {
                 nullAbleDefault = fmt.Sprintf(" NOT NULL DEFAULT '%s'", column.ColumnDefault.String)
