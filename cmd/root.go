@@ -656,8 +656,8 @@ func diff(sourceDbConfig DbConfig, targetDbConfig DbConfig, sourceDb *gorm.DB, t
                     cSql = fmt.Sprintf(" COMMENT='%s'", getColumnComment(sourceTable.TableComment))
                 }
 
-                createTableSql = append(createTableSql, fmt.Sprintf(") ENGINE=%s DEFAULT CHARSET=%s%s;",
-                    sourceTable.ENGINE.String, sourceSchema.DefaultCharacterSetName, cSql,
+                createTableSql = append(createTableSql, fmt.Sprintf(") ENGINE=%s DEFAULT CHARSET=%s COLLATE=%s%s;",
+                    sourceTable.ENGINE.String, sourceSchema.DefaultCharacterSetName, sourceSchema.DefaultCollationName, cSql,
                 ))
 
                 lock.Lock()
@@ -1035,9 +1035,23 @@ func getColumnAfter(ordinalPosition int, columnsPos map[int]Column) string {
 }
 
 func getCharacterSet(sourceColumn Column, targetColumn Column) string {
-    if sourceColumn.CharacterSetName.Valid {
-        if sourceColumn.CharacterSetName.String != targetColumn.CharacterSetName.String || sourceColumn == targetColumn {
-            return fmt.Sprintf(" CHARACTER SET %s", sourceColumn.CharacterSetName.String)
+    if sourceColumn.CharacterSetName.Valid && sourceColumn.CollationName.Valid {
+        condition := false
+
+        if sourceColumn.CharacterSetName.String != targetColumn.CharacterSetName.String {
+            condition = true
+        }
+
+        if sourceColumn.CollationName.String != targetColumn.CollationName.String {
+            condition = true
+        }
+
+        if sourceColumn == targetColumn {
+            condition = true
+        }
+
+        if condition {
+            return fmt.Sprintf(" CHARACTER SET %s COLLATE %s", sourceColumn.CharacterSetName.String, sourceColumn.CollationName.String)
         }
     }
 
