@@ -344,6 +344,8 @@ func diff(sourceDbConfig DbConfig, targetDbConfig DbConfig, sourceDb *gorm.DB, t
     switch sourceTable.TableType {
     case "BASE TABLE":
         if _, ok := targetTableMap[sourceTable.TableName]; ok {
+            targetTable := targetTableMap[sourceTable.TableName]
+
             var (
                 sourceColumnData []Column
                 targetColumnData []Column
@@ -388,8 +390,6 @@ func diff(sourceDbConfig DbConfig, targetDbConfig DbConfig, sourceDb *gorm.DB, t
                 }
 
                 if !compareColumns(sourceColumnsPos, targetColumnsPos) {
-                    alterTableSql = append(alterTableSql, fmt.Sprintf("ALTER TABLE `%s`", sourceTable.TableName))
-
                     // DROP COLUMN ...
                     for _, targetColumn := range targetColumns {
                         if _, ok := sourceColumns[targetColumn.ColumnName]; !ok {
@@ -501,10 +501,6 @@ func diff(sourceDbConfig DbConfig, targetDbConfig DbConfig, sourceDb *gorm.DB, t
                 }
 
                 if !compareStatistics(sourceStatisticsDataMap, targetStatisticsDataMap) {
-                    if len(alterTableSql) <= 0 {
-                        alterTableSql = append(alterTableSql, fmt.Sprintf("ALTER TABLE `%s`", sourceTable.TableName))
-                    }
-
                     // DROP INDEX ...
                     for targetIndexName := range targetStatisticsDataMap {
                         if _, ok := sourceStatisticsDataMap[targetIndexName]; !ok {
@@ -544,7 +540,37 @@ func diff(sourceDbConfig DbConfig, targetDbConfig DbConfig, sourceDb *gorm.DB, t
                 }
             }
 
+            // ENGINE
+            if sourceTable.ENGINE.Valid {
+                if sourceTable.ENGINE.String != targetTable.ENGINE.String {
+                    alterColumnSql = append(alterColumnSql, fmt.Sprintf("  ENGINE=%s", sourceTable.ENGINE.String))
+                }
+            }
+
+            // CHARACTER SET,COLLATE
+            if sourceTable.TableCollation.Valid {
+                if sourceTable.TableCollation.String != targetTable.TableCollation.String {
+                    charset := strings.Split(sourceTable.TableCollation.String, "_")[0]
+                    collate := sourceTable.TableCollation.String
+
+                    alterColumnSql = append(alterColumnSql, fmt.Sprintf("  CHARACTER SET=%s, COLLATE=%s",
+                        charset, collate,
+                    ))
+                }
+            }
+
+            // COMMENT
+            if comment {
+                if sourceTable.TableComment != targetTable.TableComment {
+                    alterColumnSql = append(alterColumnSql, fmt.Sprintf("  COMMENT='%s'", sourceTable.TableComment))
+                }
+            }
+
             // ALTER TABLE SQL ...
+            if len(alterColumnSql) > 0 {
+                alterTableSql = append(alterTableSql, fmt.Sprintf("ALTER TABLE `%s`", sourceTable.TableName))
+            }
+
             alterColumnSqlLen := len(alterColumnSql)
 
             if alterColumnSqlLen > 0 {
@@ -656,8 +682,16 @@ func diff(sourceDbConfig DbConfig, targetDbConfig DbConfig, sourceDb *gorm.DB, t
                     cSql = fmt.Sprintf(" COMMENT='%s'", getColumnComment(sourceTable.TableComment))
                 }
 
+                charset := sourceSchema.DefaultCharacterSetName
+                collate := sourceSchema.DefaultCollationName
+
+                if sourceTable.TableCollation.Valid {
+                    charset = strings.Split(sourceTable.TableCollation.String, "_")[0]
+                    collate = sourceTable.TableCollation.String
+                }
+
                 createTableSql = append(createTableSql, fmt.Sprintf(") ENGINE=%s DEFAULT CHARSET=%s COLLATE=%s%s;",
-                    sourceTable.ENGINE.String, sourceSchema.DefaultCharacterSetName, sourceSchema.DefaultCollationName, cSql,
+                    sourceTable.ENGINE.String, charset, collate, cSql,
                 ))
 
                 lock.Lock()
