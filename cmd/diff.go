@@ -374,22 +374,29 @@ func alterTable(sourceDbConfig DbConfig, targetDbConfig DbConfig, sourceDb *gorm
     }
 
     // ALTER TABLE SQL ...
-    if len(alterColumnSql) > 0 {
-        alterTableSql = append(alterTableSql, fmt.Sprintf("ALTER TABLE `%s`", sourceTable.TableName))
-    }
-
-    alterColumnSqlLen := len(alterColumnSql)
-
-    if alterColumnSqlLen > 0 {
-        for _, alterColumn := range alterColumnSql {
-            var columnDot = ""
-            if alterColumn == alterColumnSql[alterColumnSqlLen-1] {
-                columnDot = ";"
-            } else {
-                columnDot = ","
+    if tidb {
+        if len(alterColumnSql) > 0 {
+            for _, alterColumn := range alterColumnSql {
+                alterTableSql = append(alterTableSql, fmt.Sprintf("ALTER TABLE `%s`", sourceTable.TableName))
+                alterTableSql = append(alterTableSql, fmt.Sprintf("%s;", alterColumn))
             }
+        }
+    } else {
+        alterColumnSqlLen := len(alterColumnSql)
 
-            alterTableSql = append(alterTableSql, fmt.Sprintf("%s%s", alterColumn, columnDot))
+        if alterColumnSqlLen > 0 {
+            alterTableSql = append(alterTableSql, fmt.Sprintf("ALTER TABLE `%s`", sourceTable.TableName))
+
+            for _, alterColumn := range alterColumnSql {
+                var columnDot = ""
+                if alterColumn == alterColumnSql[alterColumnSqlLen-1] {
+                    columnDot = ";"
+                } else {
+                    columnDot = ","
+                }
+
+                alterTableSql = append(alterTableSql, fmt.Sprintf("%s%s", alterColumn, columnDot))
+            }
         }
     }
 
