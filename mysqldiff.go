@@ -1,12 +1,12 @@
 package main
 
 import (
-	"go-mysqldiff/cmd"
-	"os"
+    "go-mysqldiff/cmd"
+    "log"
 )
 
 func main() {
-	if err := cmd.Execute(); err != nil {
-		os.Exit(1)
-	}
+    if err := cmd.Execute(); err != nil {
+        log.Fatalln(err)
+    }
 }
