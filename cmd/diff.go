@@ -31,21 +31,23 @@ func diff(sourceDbConfig DbConfig, targetDbConfig DbConfig, sourceDb *gorm.DB, t
     switch sourceTable.TableType {
     case "BASE TABLE":
         if _, ok := targetTableMap[sourceTable.TableName]; ok {
-            alterTable(sourceDbConfig, targetDbConfig, sourceDb, targetDb, sourceSchema, sourceTable, targetTableMap)
+            alterTable(sourceDbConfig, targetDbConfig, sourceDb, targetDb, sourceTable, targetTableMap)
         } else {
-            createTable(sourceDbConfig, targetDbConfig, sourceDb, targetDb, sourceSchema, sourceTable, targetTableMap)
+            createTable(sourceDbConfig, sourceDb, sourceSchema, sourceTable)
         }
     case "VIEW":
-        createView(sourceDbConfig, targetDbConfig, sourceDb, targetDb, sourceSchema, sourceTable, targetTableMap)
+        createView(sourceDbConfig, targetDbConfig, sourceDb, targetDb, sourceTable, targetTableMap)
     }
 
     <-ch
 }
 
 // CREATE TABLE ...
-func createTable(sourceDbConfig DbConfig, targetDbConfig DbConfig, sourceDb *gorm.DB, targetDb *gorm.DB, sourceSchema Schema, sourceTable Table, targetTableMap map[string]Table) {
+func createTable(sourceDbConfig DbConfig, sourceDb *gorm.DB, sourceSchema Schema, sourceTable Table) {
     var (
-        sourceColumnData []Column
+        sourceColumnData       []Column
+        sourceStatisticsData   []Statistic
+        sourceTableConstraints []TableConstraints
     )
 
     sourceDb.Table("COLUMNS").Order("`ORDINAL_POSITION` ASC").Find(
@@ -57,8 +59,6 @@ func createTable(sourceDbConfig DbConfig, targetDbConfig DbConfig, sourceDb *gor
     sourceColumnDataLen := len(sourceColumnData)
 
     if sourceColumnDataLen > 0 {
-        var sourceStatisticsData []Statistic
-
         sourceDb.Table("STATISTICS").Find(
             &sourceStatisticsData,
             "`TABLE_SCHEMA` = ? AND `TABLE_NAME` = ?",
@@ -120,6 +120,52 @@ func createTable(sourceDbConfig DbConfig, targetDbConfig DbConfig, sourceDb *gor
             }
         }
 
+        // CONSTRAINT [symbol] FOREIGN KEY (col_name, ...) REFERENCES tbl_name (col_name,...) [ON DELETE reference_option] [ON UPDATE reference_option]
+        sourceDb.Table("TABLE_CONSTRAINTS").Find(&sourceTableConstraints,
+            "`TABLE_SCHEMA` = ? AND `TABLE_NAME` = ? AND `CONSTRAINT_TYPE` = ?",
+            sourceTable.TableSchema, sourceTable.TableName, "FOREIGN KEY",
+        )
+
+        if len(sourceTableConstraints) > 0 {
+            for _, constraint := range sourceTableConstraints {
+                var sourceReferentialConstraint ReferentialConstraints
+
+                tx1 := sourceDb.Table("REFERENTIAL_CONSTRAINTS").First(&sourceReferentialConstraint,
+                    "`CONSTRAINT_SCHEMA` = ? AND `CONSTRAINT_NAME` = ?",
+                    sourceTable.TableSchema, constraint.ConstraintName,
+                )
+
+                if tx1.RowsAffected > 0 {
+                    var sourceKeyColumnUsages []KeyColumnUsage
+
+                    tx2 := sourceDb.Table("KEY_COLUMN_USAGE").Order("`POSITION_IN_UNIQUE_CONSTRAINT` ASC").Find(
+                        &sourceKeyColumnUsages,
+                        "`CONSTRAINT_SCHEMA` = ? AND `CONSTRAINT_NAME` = ? AND `TABLE_SCHEMA` = ? AND `TABLE_NAME` = ?",
+                        sourceTable.TableSchema, constraint.ConstraintName, sourceTable.TableSchema, sourceTable.TableName,
+                    )
+
+                    if tx2.RowsAffected > 0 {
+                        sourceTableKeyColumns := make(map[string][]string)
+
+                        for _, sourceKeyColumnUsage := range sourceKeyColumnUsages {
+                            sourceTableKeyColumns[sourceReferentialConstraint.TableName] = append(sourceTableKeyColumns[sourceReferentialConstraint.TableName], fmt.Sprintf("`%s`", sourceKeyColumnUsage.ColumnName))
+                            sourceTableKeyColumns[sourceReferentialConstraint.ReferencedTableName] = append(sourceTableKeyColumns[sourceReferentialConstraint.ReferencedTableName], fmt.Sprintf("`%s`", sourceKeyColumnUsage.ReferencedColumnName))
+                        }
+
+                        constraintSql := fmt.Sprintf("  CONSTRAINT `%s` FOREIGN KEY (%s) REFERENCES `%s` (%s) ON DELETE %s ON UPDATE %s",
+                            sourceReferentialConstraint.ConstraintName,
+                            strings.Join(sourceTableKeyColumns[sourceReferentialConstraint.TableName], ","),
+                            sourceReferentialConstraint.ReferencedTableName,
+                            strings.Join(sourceTableKeyColumns[sourceReferentialConstraint.ReferencedTableName], ","),
+                            sourceReferentialConstraint.DeleteRule, sourceReferentialConstraint.UpdateRule,
+                        )
+
+                        createKeySql = append(createKeySql, constraintSql)
+                    }
+                }
+            }
+        }
+
         createTableSql = append(createTableSql, strings.Join(createKeySql, ",\n"))
 
         cSql := ""
@@ -150,7 +196,7 @@ func createTable(sourceDbConfig DbConfig, targetDbConfig DbConfig, sourceDb *gor
 }
 
 // ALTER TABLE ...
-func alterTable(sourceDbConfig DbConfig, targetDbConfig DbConfig, sourceDb *gorm.DB, targetDb *gorm.DB, sourceSchema Schema, sourceTable Table, targetTableMap map[string]Table) {
+func alterTable(sourceDbConfig DbConfig, targetDbConfig DbConfig, sourceDb *gorm.DB, targetDb *gorm.DB, sourceTable Table, targetTableMap map[string]Table) {
     targetTable := targetTableMap[sourceTable.TableName]
 
     var (
@@ -413,7 +459,7 @@ func alterTable(sourceDbConfig DbConfig, targetDbConfig DbConfig, sourceDb *gorm
 }
 
 // CREATE OR REPLACE VIEW ...
-func createView(sourceDbConfig DbConfig, targetDbConfig DbConfig, sourceDb *gorm.DB, targetDb *gorm.DB, sourceSchema Schema, sourceTable Table, targetTableMap map[string]Table) {
+func createView(sourceDbConfig DbConfig, targetDbConfig DbConfig, sourceDb *gorm.DB, targetDb *gorm.DB, sourceTable Table, targetTableMap map[string]Table) {
     var (
         sourceView View
         targetView View

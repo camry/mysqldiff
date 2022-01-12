@@ -99,3 +99,41 @@ type View struct {
     CharacterSetClient  string `gorm:"column:CHARACTER_SET_CLIENT"`
     CollationConnection string `gorm:"column:COLLATION_CONNECTION"`
 }
+
+type TableConstraints struct {
+    ConstraintCatalog string `gorm:"column:CONSTRAINT_CATALOG"`
+    ConstraintSchema  string `gorm:"column:CONSTRAINT_SCHEMA"`
+    ConstraintName    string `gorm:"column:CONSTRAINT_NAME"`
+    TableSchema       string `gorm:"column:TABLE_SCHEMA"`
+    TableName         string `gorm:"column:TABLE_NAME"`
+    ConstraintType    string `gorm:"column:CONSTRAINT_TYPE"`
+}
+
+type ReferentialConstraints struct {
+    ConstraintCatalog       string `gorm:"column:CONSTRAINT_CATALOG"`
+    ConstraintSchema        string `gorm:"column:CONSTRAINT_SCHEMA"`
+    ConstraintName          string `gorm:"column:CONSTRAINT_NAME"`
+    UniqueConstraintCatalog string `gorm:"column:UNIQUE_CONSTRAINT_CATALOG"`
+    UniqueConstraintSchema  string `gorm:"column:UNIQUE_CONSTRAINT_SCHEMA"`
+    UniqueConstraintName    string `gorm:"column:UNIQUE_CONSTRAINT_NAME"`
+    MatchOption             string `gorm:"column:MATCH_OPTION"`
+    UpdateRule              string `gorm:"column:UPDATE_RULE"`
+    DeleteRule              string `gorm:"column:DELETE_RULE"`
+    TableName               string `gorm:"column:TABLE_NAME"`
+    ReferencedTableName     string `gorm:"column:REFERENCED_TABLE_NAME"`
+}
+
+type KeyColumnUsage struct {
+    ConstraintCatalog          string `gorm:"column:CONSTRAINT_CATALOG"`
+    ConstraintSchema           string `gorm:"column:CONSTRAINT_SCHEMA"`
+    ConstraintName             string `gorm:"column:CONSTRAINT_NAME"`
+    TableCatalog               string `gorm:"column:TABLE_CATALOG"`
+    TableSchema                string `gorm:"column:TABLE_SCHEMA"`
+    TableName                  string `gorm:"column:TABLE_NAME"`
+    ColumnName                 string `gorm:"column:COLUMN_NAME"`
+    OrdinalPosition            int64  `gorm:"column:ORDINAL_POSITION"`
+    PositionInUniqueConstraint int64  `gorm:"column:POSITION_IN_UNIQUE_CONSTRAINT"`
+    ReferencedTableSchema      string `gorm:"column:REFERENCED_TABLE_SCHEMA"`
+    ReferencedTableName        string `gorm:"column:REFERENCED_TABLE_NAME"`
+    ReferencedColumnName       string `gorm:"column:REFERENCED_COLUMN_NAME"`
+}

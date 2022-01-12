@@ -46,6 +46,30 @@ func getColumnNullAbleDefault(column Column) string {
     return nullAbleDefault
 }
 
+func getColumnAfter(ordinalPosition int, columnsPos map[int]Column) string {
+    pos := ordinalPosition - 1
+
+    if _, ok := columnsPos[pos]; ok {
+        return fmt.Sprintf("AFTER `%s`", columnsPos[pos].ColumnName)
+    } else {
+        return "FIRST"
+    }
+}
+
+func getColumnExtra(column Column) string {
+    extra := strings.TrimSpace(strings.Replace(strings.ToUpper(column.EXTRA), "DEFAULT_GENERATED", "", 1))
+
+    if extra != "" {
+        return fmt.Sprintf(" %s", extra)
+    }
+
+    return ""
+}
+
+func getColumnComment(columnComment string) string {
+    return strings.ReplaceAll(columnComment, "'", "\\'")
+}
+
 func getAddKeys(indexName string, statisticMap map[int]Statistic) string {
     if 1 == statisticMap[1].NonUnique {
         var seqInIndexSort []int
@@ -115,14 +139,8 @@ func getAddKeys(indexName string, statisticMap map[int]Statistic) string {
     }
 }
 
-func getColumnAfter(ordinalPosition int, columnsPos map[int]Column) string {
-    pos := ordinalPosition - 1
+func getConstraint() {
 
-    if _, ok := columnsPos[pos]; ok {
-        return fmt.Sprintf("AFTER `%s`", columnsPos[pos].ColumnName)
-    } else {
-        return "FIRST"
-    }
 }
 
 func getCharacterSet(sourceColumn Column, targetColumn Column) string {
@@ -147,18 +165,4 @@ func getCharacterSet(sourceColumn Column, targetColumn Column) string {
     }
 
     return ""
-}
-
-func getColumnExtra(column Column) string {
-    extra := strings.TrimSpace(strings.Replace(strings.ToUpper(column.EXTRA), "DEFAULT_GENERATED", "", 1))
-
-    if extra != "" {
-        return fmt.Sprintf(" %s", extra)
-    }
-
-    return ""
-}
-
-func getColumnComment(columnComment string) string {
-    return strings.ReplaceAll(columnComment, "'", "\\'")
 }
