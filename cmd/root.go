@@ -228,7 +228,7 @@ var (
                 }
                 
                 fmt.Println()
-                fmt.Println("SET FOREIGN_KEY_CHECKS=0;")
+                fmt.Println("SET FOREIGN_KEY_CHECKS=1;")
             }
         },
     }
