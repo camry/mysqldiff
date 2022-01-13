@@ -212,6 +212,7 @@ var (
             if len(diffSqlKeys) > 0 && len(diffSqlMap) > 0 {
                 fmt.Println(fmt.Sprintf("SET NAMES %s;\n", sourceSchema.DefaultCharacterSetName))
                 fmt.Println("SET FOREIGN_KEY_CHECKS=0;")
+                fmt.Println()
 
                 sort.Strings(diffSqlKeys)
 
@@ -225,7 +226,8 @@ var (
                         }
                     }
                 }
-
+                
+                fmt.Println()
                 fmt.Println("SET FOREIGN_KEY_CHECKS=0;")
             }
         },
