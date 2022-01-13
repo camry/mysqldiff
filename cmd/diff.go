@@ -45,9 +45,8 @@ func diff(sourceDbConfig DbConfig, targetDbConfig DbConfig, sourceDb *gorm.DB, t
 // CREATE TABLE ...
 func createTable(sourceDbConfig DbConfig, sourceDb *gorm.DB, sourceSchema Schema, sourceTable Table) {
     var (
-        sourceColumnData       []Column
-        sourceStatisticsData   []Statistic
-        sourceTableConstraints []TableConstraints
+        sourceColumnData     []Column
+        sourceStatisticsData []Statistic
     )
 
     sourceDb.Table("COLUMNS").Order("`ORDINAL_POSITION` ASC").Find(
@@ -121,49 +120,10 @@ func createTable(sourceDbConfig DbConfig, sourceDb *gorm.DB, sourceSchema Schema
         }
 
         // CONSTRAINT [symbol] FOREIGN KEY (col_name, ...) REFERENCES tbl_name (col_name,...) [ON DELETE reference_option] [ON UPDATE reference_option]
-        sourceDb.Table("TABLE_CONSTRAINTS").Find(&sourceTableConstraints,
-            "`TABLE_SCHEMA` = ? AND `TABLE_NAME` = ? AND `CONSTRAINT_TYPE` = ?",
-            sourceTable.TableSchema, sourceTable.TableName, "FOREIGN KEY",
-        )
+        constraintSql := getConstraint(sourceDb, sourceTable)
 
-        if len(sourceTableConstraints) > 0 {
-            for _, constraint := range sourceTableConstraints {
-                var sourceReferentialConstraint ReferentialConstraints
-
-                tx1 := sourceDb.Table("REFERENTIAL_CONSTRAINTS").First(&sourceReferentialConstraint,
-                    "`CONSTRAINT_SCHEMA` = ? AND `CONSTRAINT_NAME` = ?",
-                    sourceTable.TableSchema, constraint.ConstraintName,
-                )
-
-                if tx1.RowsAffected > 0 {
-                    var sourceKeyColumnUsages []KeyColumnUsage
-
-                    tx2 := sourceDb.Table("KEY_COLUMN_USAGE").Order("`POSITION_IN_UNIQUE_CONSTRAINT` ASC").Find(
-                        &sourceKeyColumnUsages,
-                        "`CONSTRAINT_SCHEMA` = ? AND `CONSTRAINT_NAME` = ? AND `TABLE_SCHEMA` = ? AND `TABLE_NAME` = ?",
-                        sourceTable.TableSchema, constraint.ConstraintName, sourceTable.TableSchema, sourceTable.TableName,
-                    )
-
-                    if tx2.RowsAffected > 0 {
-                        sourceTableKeyColumns := make(map[string][]string)
-
-                        for _, sourceKeyColumnUsage := range sourceKeyColumnUsages {
-                            sourceTableKeyColumns[sourceReferentialConstraint.TableName] = append(sourceTableKeyColumns[sourceReferentialConstraint.TableName], fmt.Sprintf("`%s`", sourceKeyColumnUsage.ColumnName))
-                            sourceTableKeyColumns[sourceReferentialConstraint.ReferencedTableName] = append(sourceTableKeyColumns[sourceReferentialConstraint.ReferencedTableName], fmt.Sprintf("`%s`", sourceKeyColumnUsage.ReferencedColumnName))
-                        }
-
-                        constraintSql := fmt.Sprintf("  CONSTRAINT `%s` FOREIGN KEY (%s) REFERENCES `%s` (%s) ON DELETE %s ON UPDATE %s",
-                            sourceReferentialConstraint.ConstraintName,
-                            strings.Join(sourceTableKeyColumns[sourceReferentialConstraint.TableName], ","),
-                            sourceReferentialConstraint.ReferencedTableName,
-                            strings.Join(sourceTableKeyColumns[sourceReferentialConstraint.ReferencedTableName], ","),
-                            sourceReferentialConstraint.DeleteRule, sourceReferentialConstraint.UpdateRule,
-                        )
-
-                        createKeySql = append(createKeySql, constraintSql)
-                    }
-                }
-            }
+        if constraintSql != "" {
+            createKeySql = append(createKeySql, fmt.Sprintf("  %s", constraintSql))
         }
 
         createTableSql = append(createTableSql, strings.Join(createKeySql, ",\n"))
@@ -393,6 +353,64 @@ func alterTable(sourceDbConfig DbConfig, targetDbConfig DbConfig, sourceDb *gorm
         }
     }
 
+    // ALTER TABLE tbl_name DROP FOREIGN KEY fk_symbol;
+    // CONSTRAINT [symbol] FOREIGN KEY (col_name, ...) REFERENCES tbl_name (col_name,...) [ON DELETE reference_option] [ON UPDATE reference_option]
+    var (
+        sourceTableConstraints []TableConstraints
+        targetTableConstraints []TableConstraints
+    )
+    sourceTableConstraintsMap := make(map[string]TableConstraints)
+    targetTableConstraintsMap := make(map[string]TableConstraints)
+
+    tx1 := sourceDb.Table("TABLE_CONSTRAINTS").Find(&sourceTableConstraints,
+        "`TABLE_SCHEMA` = ? AND `TABLE_NAME` = ? AND `CONSTRAINT_TYPE` = ?",
+        sourceTable.TableSchema, sourceTable.TableName, "FOREIGN KEY",
+    )
+
+    tx2 := targetDb.Table("TABLE_CONSTRAINTS").Find(&targetTableConstraints,
+        "`TABLE_SCHEMA` = ? AND `TABLE_NAME` = ? AND `CONSTRAINT_TYPE` = ?",
+        targetTable.TableSchema, sourceTable.TableName, "FOREIGN KEY",
+    )
+
+    if tx1.RowsAffected > 0 {
+        for _, sourceTableConstraint := range sourceTableConstraints {
+            sourceTableConstraintsMap[sourceTableConstraint.ConstraintName] = sourceTableConstraint
+        }
+    }
+
+    if tx2.RowsAffected > 0 {
+        for _, targetTableConstraint := range targetTableConstraints {
+            targetTableConstraintsMap[targetTableConstraint.ConstraintName] = targetTableConstraint
+
+            if _, ok := sourceTableConstraintsMap[targetTableConstraint.ConstraintName]; !ok {
+                constraintSql := fmt.Sprintf("  DROP FOREIGN KEY `%s`", targetTableConstraint.ConstraintName)
+                alterColumnSql = append(alterColumnSql, constraintSql)
+            }
+        }
+    }
+
+    if tx1.RowsAffected > 0 {
+        for _, sourceTableConstraint := range sourceTableConstraints {
+            isAddConstraint := false
+
+            if _, ok := targetTableConstraintsMap[sourceTableConstraint.ConstraintName]; ok {
+                if !compareConstraint(sourceDb, targetDb, sourceTable, targetTable, sourceTableConstraint, targetTableConstraintsMap[sourceTableConstraint.ConstraintName]) {
+                    constraintSql := fmt.Sprintf("  DROP FOREIGN KEY `%s`", sourceTableConstraint.ConstraintName)
+                    alterColumnSql = append(alterColumnSql, constraintSql)
+                }
+            } else {
+                isAddConstraint = true
+            }
+
+            if isAddConstraint {
+                constraintSql := getConstraint(sourceDb, sourceTable)
+                if constraintSql != "" {
+                    alterColumnSql = append(alterColumnSql, fmt.Sprintf("  ADD %s", constraintSql))
+                }
+            }
+        }
+    }
+    
     // ENGINE
     if sourceTable.ENGINE.Valid {
         if sourceTable.ENGINE.String != targetTable.ENGINE.String {

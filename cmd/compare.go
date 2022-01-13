@@ -1,5 +1,11 @@
 package cmd
 
+import (
+    "fmt"
+    "gorm.io/gorm"
+    "strings"
+)
+
 func resetCalcPosition(columnName string, sourcePos int, targetColumns map[string]Column, status int) {
     switch status {
     case 1:
@@ -191,6 +197,108 @@ func compareStatistic(sourceStatistic Statistic, targetStatistic Statistic) bool
     }
 
     if sourceStatistic.IndexType != targetStatistic.IndexType {
+        return false
+    }
+
+    return true
+}
+
+func compareConstraint(sourceDb *gorm.DB, targetDb *gorm.DB, sourceTable Table, targetTable Table, sourceTableConstraint TableConstraints, targetTableConstraint TableConstraints) bool {
+    if sourceTableConstraint.ConstraintName != targetTableConstraint.ConstraintName {
+        return false
+    }
+
+    if sourceTableConstraint.TableName != targetTableConstraint.TableName {
+        return false
+    }
+
+    if sourceTableConstraint.ConstraintType != targetTableConstraint.ConstraintType {
+        return false
+    }
+
+    var (
+        sourceReferentialConstraint ReferentialConstraints
+        targetReferentialConstraint ReferentialConstraints
+    )
+
+    tx1 := sourceDb.Table("REFERENTIAL_CONSTRAINTS").First(&sourceReferentialConstraint,
+        "`CONSTRAINT_SCHEMA` = ? AND `CONSTRAINT_NAME` = ?",
+        sourceTable.TableSchema, sourceTableConstraint.ConstraintName,
+    )
+
+    tx2 := targetDb.Table("REFERENTIAL_CONSTRAINTS").First(&targetReferentialConstraint,
+        "`CONSTRAINT_SCHEMA` = ? AND `CONSTRAINT_NAME` = ?",
+        targetTable.TableSchema, sourceTableConstraint.ConstraintName,
+    )
+
+    if tx1.RowsAffected <= 0 || tx2.RowsAffected <= 0 {
+        return false
+    }
+
+    if sourceReferentialConstraint.UniqueConstraintName != targetReferentialConstraint.UniqueConstraintName {
+        return false
+    }
+
+    if sourceReferentialConstraint.MatchOption != targetReferentialConstraint.MatchOption {
+        return false
+    }
+
+    if sourceReferentialConstraint.UpdateRule != targetReferentialConstraint.UpdateRule {
+        return false
+    }
+
+    if sourceReferentialConstraint.DeleteRule != targetReferentialConstraint.DeleteRule {
+        return false
+    }
+
+    if sourceReferentialConstraint.TableName != targetReferentialConstraint.TableName {
+        return false
+    }
+
+    if sourceReferentialConstraint.ReferencedTableName != targetReferentialConstraint.ReferencedTableName {
+        return false
+    }
+
+    var (
+        sourceKeyColumnUsages []KeyColumnUsage
+        targetKeyColumnUsages []KeyColumnUsage
+    )
+
+    tx3 := sourceDb.Table("KEY_COLUMN_USAGE").Order("`POSITION_IN_UNIQUE_CONSTRAINT` ASC").Find(
+        &sourceKeyColumnUsages,
+        "`CONSTRAINT_SCHEMA` = ? AND `CONSTRAINT_NAME` = ? AND `TABLE_SCHEMA` = ? AND `TABLE_NAME` = ?",
+        sourceTable.TableSchema, sourceTableConstraint.ConstraintName, sourceTable.TableSchema, sourceTable.TableName,
+    )
+
+    tx4 := sourceDb.Table("KEY_COLUMN_USAGE").Order("`POSITION_IN_UNIQUE_CONSTRAINT` ASC").Find(
+        &targetKeyColumnUsages,
+        "`CONSTRAINT_SCHEMA` = ? AND `CONSTRAINT_NAME` = ? AND `TABLE_SCHEMA` = ? AND `TABLE_NAME` = ?",
+        targetTable.TableSchema, targetTableConstraint.ConstraintName, targetTable.TableSchema, targetTable.TableName,
+    )
+
+    if tx3.RowsAffected <= 0 || tx4.RowsAffected <= 0 {
+        return false
+    }
+
+    sourceTableKeyColumns := make(map[string][]string)
+    targetTableKeyColumns := make(map[string][]string)
+
+    for _, sourceKeyColumnUsage := range sourceKeyColumnUsages {
+        sourceTableKeyColumns[sourceReferentialConstraint.TableName] = append(sourceTableKeyColumns[sourceReferentialConstraint.TableName], fmt.Sprintf("`%s`", sourceKeyColumnUsage.ColumnName))
+        sourceTableKeyColumns[sourceReferentialConstraint.ReferencedTableName] = append(sourceTableKeyColumns[sourceReferentialConstraint.ReferencedTableName], fmt.Sprintf("`%s`", sourceKeyColumnUsage.ReferencedColumnName))
+    }
+
+    for _, targetKeyColumnUsage := range targetKeyColumnUsages {
+        targetTableKeyColumns[targetReferentialConstraint.TableName] = append(targetTableKeyColumns[targetReferentialConstraint.TableName], fmt.Sprintf("`%s`", targetKeyColumnUsage.ColumnName))
+        targetTableKeyColumns[targetReferentialConstraint.ReferencedTableName] = append(targetTableKeyColumns[targetReferentialConstraint.ReferencedTableName], fmt.Sprintf("`%s`", targetKeyColumnUsage.ReferencedColumnName))
+    }
+
+    s1 := strings.Join(sourceTableKeyColumns[sourceReferentialConstraint.TableName], ",")
+    t1 := strings.Join(targetTableKeyColumns[targetReferentialConstraint.TableName], ",")
+    s2 := strings.Join(sourceTableKeyColumns[sourceReferentialConstraint.ReferencedTableName], ",")
+    t2 := strings.Join(targetTableKeyColumns[targetReferentialConstraint.ReferencedTableName], ",")
+
+    if s1 != t1 || s2 != t2 {
         return false
     }
 
