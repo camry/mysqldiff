@@ -395,8 +395,8 @@ func alterTable(sourceDbConfig DbConfig, targetDbConfig DbConfig, sourceDb *gorm
 
             if _, ok := targetTableConstraintsMap[sourceTableConstraint.ConstraintName]; ok {
                 if !compareConstraint(sourceDb, targetDb, sourceTable, targetTable, sourceTableConstraint, targetTableConstraintsMap[sourceTableConstraint.ConstraintName]) {
-                    constraintSql := fmt.Sprintf("  DROP FOREIGN KEY `%s`", sourceTableConstraint.ConstraintName)
-                    alterColumnSql = append(alterColumnSql, constraintSql)
+                    constraintSql := fmt.Sprintf("ALTER TABLE `%s` DROP FOREIGN KEY `%s`;", sourceTable.TableName, sourceTableConstraint.ConstraintName)
+                    alterTableSql = append(alterTableSql, constraintSql)
                     isAddConstraint = true
                 }
             } else {
