@@ -120,10 +120,21 @@ func createTable(sourceDbConfig DbConfig, sourceDb *gorm.DB, sourceSchema Schema
         }
 
         // CONSTRAINT [symbol] FOREIGN KEY (col_name, ...) REFERENCES tbl_name (col_name,...) [ON DELETE reference_option] [ON UPDATE reference_option]
-        constraintSql := getConstraint(sourceDb, sourceTable)
+        var sourceTableConstraints []TableConstraints
 
-        if constraintSql != "" {
-            createKeySql = append(createKeySql, fmt.Sprintf("  %s", constraintSql))
+        tx1 := sourceDb.Table("TABLE_CONSTRAINTS").Find(&sourceTableConstraints,
+            "`TABLE_SCHEMA` = ? AND `TABLE_NAME` = ? AND `CONSTRAINT_TYPE` = ?",
+            sourceTable.TableSchema, sourceTable.TableName, "FOREIGN KEY",
+        )
+
+        if tx1.RowsAffected > 0 {
+            for _, sourceTableConstraint := range sourceTableConstraints {
+                constraintSql := getConstraint(sourceDb, sourceTable, sourceTableConstraint)
+
+                if constraintSql != "" {
+                    createKeySql = append(createKeySql, fmt.Sprintf("  %s", constraintSql))
+                }
+            }
         }
 
         createTableSql = append(createTableSql, strings.Join(createKeySql, ",\n"))
@@ -404,7 +415,7 @@ func alterTable(sourceDbConfig DbConfig, targetDbConfig DbConfig, sourceDb *gorm
             }
 
             if isAddConstraint {
-                constraintSql := getConstraint(sourceDb, sourceTable)
+                constraintSql := getConstraint(sourceDb, sourceTable, sourceTableConstraint)
                 if constraintSql != "" {
                     alterColumnSql = append(alterColumnSql, fmt.Sprintf("  ADD %s", constraintSql))
                 }

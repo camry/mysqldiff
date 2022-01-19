@@ -140,49 +140,38 @@ func getAddKeys(indexName string, statisticMap map[int]Statistic) string {
     }
 }
 
-func getConstraint(sourceDb *gorm.DB, sourceTable Table) string {
-    var sourceTableConstraints []TableConstraints
+func getConstraint(sourceDb *gorm.DB, sourceTable Table, sourceTableConstraint TableConstraints) string {
+    var sourceReferentialConstraint ReferentialConstraints
 
-    sourceDb.Table("TABLE_CONSTRAINTS").Find(&sourceTableConstraints,
-        "`TABLE_SCHEMA` = ? AND `TABLE_NAME` = ? AND `CONSTRAINT_TYPE` = ?",
-        sourceTable.TableSchema, sourceTable.TableName, "FOREIGN KEY",
+    tx1 := sourceDb.Table("REFERENTIAL_CONSTRAINTS").First(&sourceReferentialConstraint,
+        "`CONSTRAINT_SCHEMA` = ? AND `CONSTRAINT_NAME` = ?",
+        sourceTable.TableSchema, sourceTableConstraint.ConstraintName,
     )
 
-    if len(sourceTableConstraints) > 0 {
-        for _, constraint := range sourceTableConstraints {
-            var sourceReferentialConstraint ReferentialConstraints
+    if tx1.RowsAffected > 0 {
+        var sourceKeyColumnUsages []KeyColumnUsage
 
-            tx1 := sourceDb.Table("REFERENTIAL_CONSTRAINTS").First(&sourceReferentialConstraint,
-                "`CONSTRAINT_SCHEMA` = ? AND `CONSTRAINT_NAME` = ?",
-                sourceTable.TableSchema, constraint.ConstraintName,
-            )
+        tx2 := sourceDb.Table("KEY_COLUMN_USAGE").Order("`POSITION_IN_UNIQUE_CONSTRAINT` ASC").Find(
+            &sourceKeyColumnUsages,
+            "`CONSTRAINT_SCHEMA` = ? AND `CONSTRAINT_NAME` = ? AND `TABLE_SCHEMA` = ? AND `TABLE_NAME` = ?",
+            sourceTable.TableSchema, sourceTableConstraint.ConstraintName, sourceTable.TableSchema, sourceTable.TableName,
+        )
 
-            if tx1.RowsAffected > 0 {
-                var sourceKeyColumnUsages []KeyColumnUsage
+        if tx2.RowsAffected > 0 {
+            sourceTableKeyColumns := make(map[string][]string)
 
-                tx2 := sourceDb.Table("KEY_COLUMN_USAGE").Order("`POSITION_IN_UNIQUE_CONSTRAINT` ASC").Find(
-                    &sourceKeyColumnUsages,
-                    "`CONSTRAINT_SCHEMA` = ? AND `CONSTRAINT_NAME` = ? AND `TABLE_SCHEMA` = ? AND `TABLE_NAME` = ?",
-                    sourceTable.TableSchema, constraint.ConstraintName, sourceTable.TableSchema, sourceTable.TableName,
-                )
-
-                if tx2.RowsAffected > 0 {
-                    sourceTableKeyColumns := make(map[string][]string)
-
-                    for _, sourceKeyColumnUsage := range sourceKeyColumnUsages {
-                        sourceTableKeyColumns[sourceReferentialConstraint.TableName] = append(sourceTableKeyColumns[sourceReferentialConstraint.TableName], fmt.Sprintf("`%s`", sourceKeyColumnUsage.ColumnName))
-                        sourceTableKeyColumns[sourceReferentialConstraint.ReferencedTableName] = append(sourceTableKeyColumns[sourceReferentialConstraint.ReferencedTableName], fmt.Sprintf("`%s`", sourceKeyColumnUsage.ReferencedColumnName))
-                    }
-
-                    return fmt.Sprintf("CONSTRAINT `%s` FOREIGN KEY (%s) REFERENCES `%s` (%s) ON DELETE %s ON UPDATE %s",
-                        sourceReferentialConstraint.ConstraintName,
-                        strings.Join(sourceTableKeyColumns[sourceReferentialConstraint.TableName], ","),
-                        sourceReferentialConstraint.ReferencedTableName,
-                        strings.Join(sourceTableKeyColumns[sourceReferentialConstraint.ReferencedTableName], ","),
-                        sourceReferentialConstraint.DeleteRule, sourceReferentialConstraint.UpdateRule,
-                    )
-                }
+            for _, sourceKeyColumnUsage := range sourceKeyColumnUsages {
+                sourceTableKeyColumns[sourceReferentialConstraint.TableName] = append(sourceTableKeyColumns[sourceReferentialConstraint.TableName], fmt.Sprintf("`%s`", sourceKeyColumnUsage.ColumnName))
+                sourceTableKeyColumns[sourceReferentialConstraint.ReferencedTableName] = append(sourceTableKeyColumns[sourceReferentialConstraint.ReferencedTableName], fmt.Sprintf("`%s`", sourceKeyColumnUsage.ReferencedColumnName))
             }
+
+            return fmt.Sprintf("CONSTRAINT `%s` FOREIGN KEY (%s) REFERENCES `%s` (%s) ON DELETE %s ON UPDATE %s",
+                sourceReferentialConstraint.ConstraintName,
+                strings.Join(sourceTableKeyColumns[sourceReferentialConstraint.TableName], ","),
+                sourceReferentialConstraint.ReferencedTableName,
+                strings.Join(sourceTableKeyColumns[sourceReferentialConstraint.ReferencedTableName], ","),
+                sourceReferentialConstraint.DeleteRule, sourceReferentialConstraint.UpdateRule,
+            )
         }
     }
 
