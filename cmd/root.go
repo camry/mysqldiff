@@ -29,7 +29,8 @@ func init() {
     rootCmd.Flags().StringVarP(&source, "source", "s", "", "指定源服务器。(格式: <user>:<password>@<host>:<port>)")
     rootCmd.Flags().StringVarP(&target, "target", "t", "", "指定目标服务器。(格式: <user>:<password>@<host>:<port>)")
     rootCmd.Flags().StringVarP(&db, "db", "d", "", "指定数据库。(格式: <source_db>:<target_db>)")
-    rootCmd.Flags().BoolVarP(&comment, "comment", "c", false, "是否生成注释？")
+    rootCmd.Flags().BoolVarP(&comment, "comment", "c", false, "是否比对注释？")
+    rootCmd.Flags().BoolVarP(&foreign, "foreign", "f", false, "是否比对外键？")
     rootCmd.Flags().BoolVarP(&tidb, "tidb", "i", false, "是否 TiDB ？")
 
     cobra.CheckErr(rootCmd.MarkFlagRequired("source"))
@@ -50,6 +51,7 @@ var (
     target  string
     db      string
     comment bool
+    foreign bool
     tidb    bool
 
     diffSqlKeys []string
@@ -226,7 +228,7 @@ var (
                         }
                     }
                 }
-                
+
                 fmt.Println()
                 fmt.Println("SET FOREIGN_KEY_CHECKS=1;")
             }
