@@ -6,6 +6,7 @@ import (
     "gorm.io/driver/mysql"
     "gorm.io/gorm"
     "gorm.io/gorm/logger"
+    "os"
     "regexp"
     "sort"
     "strconv"
@@ -33,7 +34,7 @@ func init() {
     rootCmd.Flags().BoolVarP(&foreign, "foreign", "f", false, "是否比对外键？")
     rootCmd.Flags().BoolVarP(&tidb, "tidb", "i", false, "是否 TiDB ？")
 
-    cobra.CheckErr(rootCmd.MarkFlagRequired("source"))
+    // cobra.CheckErr(rootCmd.MarkFlagRequired("source"))
     cobra.CheckErr(rootCmd.MarkFlagRequired("db"))
 
     rootCmd.AddCommand(completionCmd)
@@ -60,8 +61,15 @@ var (
     rootCmd = &cobra.Command{
         Use:     "mysqldiff",
         Short:   "针对 MySQL 差异 SQL 工具。",
-        Version: "v3.0.8",
+        Version: "v3.0.9",
         Run: func(cmd *cobra.Command, args []string) {
+            if source == "" {
+                source = os.Getenv("MYSQLDIFF_SOURCE")
+            }
+            if target == "" {
+                target = os.Getenv("MYSQLDIFF_TARGET")
+            }
+
             sourceMatched, err1 := regexp.MatchString(HostPattern, source)
             dbMatched, err3 := regexp.MatchString(DbPattern, db)
 
