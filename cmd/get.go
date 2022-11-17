@@ -2,9 +2,11 @@ package cmd
 
 import (
     "fmt"
-    "gorm.io/gorm"
     "sort"
     "strings"
+
+    "github.com/camry/g/gutil"
+    "gorm.io/gorm"
 )
 
 func getColumnNullAbleDefault(column Column) string {
@@ -12,7 +14,7 @@ func getColumnNullAbleDefault(column Column) string {
 
     if column.IsNullable == "NO" {
         if column.ColumnDefault.Valid {
-            if exists, _ := InArray(column.DataType, []string{"timestamp", "datetime"}); exists {
+            if gutil.InArray(column.DataType, []string{"timestamp", "datetime"}) {
                 if column.ColumnDefault.String != "CURRENT_TIMESTAMP" {
                     column.ColumnDefault.String = fmt.Sprintf("'%s'", column.ColumnDefault.String)
                 }
@@ -26,7 +28,7 @@ func getColumnNullAbleDefault(column Column) string {
         }
     } else {
         if column.ColumnDefault.Valid {
-            if exists, _ := InArray(column.DataType, []string{"timestamp", "datetime"}); exists {
+            if gutil.InArray(column.DataType, []string{"timestamp", "datetime"}) {
                 if column.ColumnDefault.String != "CURRENT_TIMESTAMP" {
                     column.ColumnDefault.String = fmt.Sprintf("'%s'", column.ColumnDefault.String)
                 }
@@ -36,7 +38,7 @@ func getColumnNullAbleDefault(column Column) string {
                 nullAbleDefault = fmt.Sprintf(" DEFAULT '%s'", column.ColumnDefault.String)
             }
         } else {
-            if exists, _ := InArray(column.DataType, []string{"timestamp", "datetime"}); exists {
+            if gutil.InArray(column.DataType, []string{"timestamp", "datetime"}) {
                 nullAbleDefault = " NULL DEFAULT NULL"
             } else {
                 nullAbleDefault = " DEFAULT NULL"

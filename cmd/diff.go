@@ -2,6 +2,7 @@ package cmd
 
 import (
     "fmt"
+    "github.com/camry/g/gutil"
     "gorm.io/gorm"
     "strings"
 )
@@ -109,7 +110,7 @@ func createTable(sourceDbConfig DbConfig, sourceDb *gorm.DB, sourceSchema Schema
                     sourceStatisticsDataMap[sourceStatistic.IndexName] = sourceSeqInIndexStatisticMap
                 }
 
-                if exists, _ := InArray(sourceStatistic.IndexName, sourceStatisticIndexNameArray); !exists {
+                if gutil.InArray(sourceStatistic.IndexName, sourceStatisticIndexNameArray) {
                     sourceStatisticIndexNameArray = append(sourceStatisticIndexNameArray, sourceStatistic.IndexName)
                 }
             }

@@ -2,16 +2,17 @@ package cmd
 
 import (
     "fmt"
-    "github.com/spf13/cobra"
-    "gorm.io/driver/mysql"
-    "gorm.io/gorm"
-    "gorm.io/gorm/logger"
     "os"
     "regexp"
     "sort"
     "strconv"
     "strings"
     "sync"
+    
+    "github.com/spf13/cobra"
+    "gorm.io/driver/mysql"
+    "gorm.io/gorm"
+    "gorm.io/gorm/logger"
 )
 
 const (

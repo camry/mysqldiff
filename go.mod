@@ -3,6 +3,7 @@ module go-mysqldiff
 go 1.17
 
 require (
+	github.com/camry/g v1.2.2
 	github.com/spf13/cobra v1.3.0
 	gorm.io/driver/mysql v1.2.3
 	gorm.io/gorm v1.22.4

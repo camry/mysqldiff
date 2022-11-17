@@ -2,8 +2,9 @@ package cmd
 
 import (
     "fmt"
-    "gorm.io/gorm"
     "strings"
+
+    "gorm.io/gorm"
 )
 
 func resetCalcPosition(columnName string, sourcePos int, targetColumns map[string]Column, status int) {
