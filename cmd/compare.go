@@ -113,8 +113,10 @@ func compareColumn(sourceColumn Column, targetColumn Column) bool {
         return false
     }
 
-    if sourceColumn.EXTRA != targetColumn.EXTRA {
-        return false
+    if !strings.Contains(sourceColumn.EXTRA, "GENERATED") {
+        if sourceColumn.EXTRA != targetColumn.EXTRA {
+            return false
+        }
     }
 
     if comment {
