@@ -2,9 +2,10 @@ package cmd
 
 import (
     "fmt"
+    "strings"
+
     "github.com/camry/g/gutil"
     "gorm.io/gorm"
-    "strings"
 )
 
 // DROP TABLE Or DROP VIEW...
@@ -110,7 +111,7 @@ func createTable(sourceDbConfig DbConfig, sourceDb *gorm.DB, sourceSchema Schema
                     sourceStatisticsDataMap[sourceStatistic.IndexName] = sourceSeqInIndexStatisticMap
                 }
 
-                if gutil.InArray(sourceStatistic.IndexName, sourceStatisticIndexNameArray) {
+                if !gutil.InArray(sourceStatistic.IndexName, sourceStatisticIndexNameArray) {
                     sourceStatisticIndexNameArray = append(sourceStatisticIndexNameArray, sourceStatistic.IndexName)
                 }
             }
