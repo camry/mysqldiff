@@ -4,7 +4,7 @@ import (
     "fmt"
     "strings"
 
-    "github.com/camry/g/gutil"
+    "github.com/samber/lo"
     "gorm.io/gorm"
 )
 
@@ -111,7 +111,7 @@ func createTable(sourceDbConfig DbConfig, sourceDb *gorm.DB, sourceSchema Schema
                     sourceStatisticsDataMap[sourceStatistic.IndexName] = sourceSeqInIndexStatisticMap
                 }
 
-                if !gutil.InArray(sourceStatistic.IndexName, sourceStatisticIndexNameArray) {
+                if !lo.Contains(sourceStatisticIndexNameArray, sourceStatistic.IndexName) {
                     sourceStatisticIndexNameArray = append(sourceStatisticIndexNameArray, sourceStatistic.IndexName)
                 }
             }
@@ -221,7 +221,7 @@ func alterTable(sourceDbConfig DbConfig, targetDbConfig DbConfig, sourceDb *gorm
             // DROP COLUMN ...
             for _, targetColumn := range targetColumns {
                 if _, ok := sourceColumns[targetColumn.ColumnName]; !ok {
-                    resetCalcPosition(targetColumn.ColumnName, targetColumn.OrdinalPosition, targetColumns, 3)
+                    resetCalcPosition(targetColumn.ColumnName, targetColumn.OrdinalPosition, targetColumns, StatusDrop)
 
                     alterColumnSql = append(alterColumnSql, fmt.Sprintf("  DROP COLUMN `%s`",
                         targetColumn.ColumnName,
@@ -249,7 +249,7 @@ func alterTable(sourceDbConfig DbConfig, targetDbConfig DbConfig, sourceDb *gorm
                         getColumnAfter(sourceColumn.OrdinalPosition, sourceColumnsPos),
                     ))
 
-                    resetCalcPosition(sourceColumn.ColumnName, sourceColumn.OrdinalPosition, targetColumns, 1)
+                    resetCalcPosition(sourceColumn.ColumnName, sourceColumn.OrdinalPosition, targetColumns, StatusAdd)
                 }
             }
 
@@ -277,7 +277,7 @@ func alterTable(sourceDbConfig DbConfig, targetDbConfig DbConfig, sourceDb *gorm
                             getColumnAfter(sourceColumn.OrdinalPosition, sourceColumnsPos),
                         ))
 
-                        resetCalcPosition(columnName, sourceColumn.OrdinalPosition, targetColumns, 2)
+                        resetCalcPosition(columnName, sourceColumn.OrdinalPosition, targetColumns, StatusModify)
                     }
                 }
             }

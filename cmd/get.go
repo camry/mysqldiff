@@ -5,7 +5,7 @@ import (
     "sort"
     "strings"
 
-    "github.com/camry/g/gutil"
+    "github.com/samber/lo"
     "gorm.io/gorm"
 )
 
@@ -14,7 +14,7 @@ func getColumnNullAbleDefault(column Column) string {
 
     if column.IsNullable == "NO" {
         if column.ColumnDefault.Valid {
-            if gutil.InArray(column.DataType, []string{"timestamp", "datetime"}) {
+            if lo.Contains([]string{"timestamp", "datetime"}, column.DataType) {
                 if column.ColumnDefault.String != "CURRENT_TIMESTAMP" {
                     column.ColumnDefault.String = fmt.Sprintf("'%s'", column.ColumnDefault.String)
                 }
@@ -28,7 +28,7 @@ func getColumnNullAbleDefault(column Column) string {
         }
     } else {
         if column.ColumnDefault.Valid {
-            if gutil.InArray(column.DataType, []string{"timestamp", "datetime"}) {
+            if lo.Contains([]string{"timestamp", "datetime"}, column.DataType) {
                 if column.ColumnDefault.String != "CURRENT_TIMESTAMP" {
                     column.ColumnDefault.String = fmt.Sprintf("'%s'", column.ColumnDefault.String)
                 }
@@ -38,7 +38,7 @@ func getColumnNullAbleDefault(column Column) string {
                 nullAbleDefault = fmt.Sprintf(" DEFAULT '%s'", column.ColumnDefault.String)
             }
         } else {
-            if gutil.InArray(column.DataType, []string{"timestamp", "datetime"}) {
+            if lo.Contains([]string{"timestamp", "datetime"}, column.DataType) {
                 nullAbleDefault = " NULL DEFAULT NULL"
             } else {
                 nullAbleDefault = " DEFAULT NULL"

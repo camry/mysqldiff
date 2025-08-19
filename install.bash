@@ -1,9 +1,10 @@
 #!/bin/bash
 
-go build mysqldiff.go 
+go build mysqldiff.go
 upx -qvf ./mysqldiff
 
 cp -f ./mysqldiff /usr/local/bin/
+mv -f ./mysqldiff ./bin/mysqldiff
 
 mysqldiff completion bash > /etc/bash_completion.d/mysqldiff && source /etc/bash_completion.d/mysqldiff
 

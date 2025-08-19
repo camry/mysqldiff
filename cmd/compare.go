@@ -7,9 +7,15 @@ import (
     "gorm.io/gorm"
 )
 
+const (
+    StatusAdd    = 1
+    StatusModify = 2
+    StatusDrop   = 3
+)
+
 func resetCalcPosition(columnName string, sourcePos int, targetColumns map[string]Column, status int) {
     switch status {
-    case 1:
+    case StatusAdd:
         // ADD ...
         for targetColumnName, targetColumn := range targetColumns {
             if targetColumn.OrdinalPosition >= sourcePos {
@@ -19,7 +25,7 @@ func resetCalcPosition(columnName string, sourcePos int, targetColumns map[strin
             }
         }
         break
-    case 2:
+    case StatusModify:
         // MODIFY ...
         if _, ok := targetColumns[columnName]; ok {
             targetColumn := targetColumns[columnName]
@@ -29,7 +35,7 @@ func resetCalcPosition(columnName string, sourcePos int, targetColumns map[strin
             targetColumns[columnName] = targetColumn
         }
         break
-    case 3:
+    case StatusDrop:
         // DROP ...
         for targetColumnName, targetColumn := range targetColumns {
             if targetColumn.OrdinalPosition >= sourcePos {
