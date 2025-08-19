@@ -62,7 +62,7 @@ var (
     rootCmd = &cobra.Command{
         Use:     "mysqldiff",
         Short:   "针对 MySQL 差异 SQL 工具。",
-        Version: "v3.0.11",
+        Version: "v3.0.12",
         Run: func(cmd *cobra.Command, args []string) {
             if source == "" {
                 source = os.Getenv("MYSQLDIFF_SOURCE")
