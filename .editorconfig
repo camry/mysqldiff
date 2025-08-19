@@ -11,3 +11,20 @@ indent_size = 4
 insert_final_newline = true
 trim_trailing_whitespace = true
 max_line_length = 160
+
+[*.go]
+ij_go_add_leading_space_to_comments = true
+ij_go_group_stdlib_imports = true
+ij_go_add_parentheses_for_single_import = false
+ij_go_import_sorting = goimports
+ij_go_indent_size = 4
+ij_go_keep_indents_on_empty_lines = false
+ij_go_local_group_mode = project
+ij_go_run_go_fmt_on_reformat = false
+ij_go_use_back_quotes_for_imports = false
+ij_go_remove_redundant_import_aliases = false
+ij_go_move_all_imports_in_one_declaration = true
+ij_go_move_all_stdlib_imports_in_one_group = true
+ij_go_call_parameters_new_line_after_left_paren = true
+ij_go_call_parameters_right_paren_on_new_line = true
+ij_go_GROUP_CURRENT_PROJECT_IMPORTS = true

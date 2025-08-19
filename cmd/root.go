@@ -8,7 +8,7 @@ import (
     "strconv"
     "strings"
     "sync"
-    
+
     "github.com/spf13/cobra"
     "gorm.io/driver/mysql"
     "gorm.io/gorm"
@@ -18,7 +18,7 @@ import (
 const (
     Dsn         = "%s:%s@tcp(%s:%d)/information_schema?timeout=10s&parseTime=true&charset=%s"
     HostPattern = "^(.*)\\:(.*)\\@(.*)\\:(\\d+)$"
-    DbPattern   = "^([A-Za-z0-9_]+)\\:([A-Za-z0-9_]+)$"
+    DbPattern   = "^([A-Za-z0-9_\\-\\.]+)\\:([A-Za-z0-9_\\-\\.]+)$"
 )
 
 func Execute() error {
@@ -62,7 +62,7 @@ var (
     rootCmd = &cobra.Command{
         Use:     "mysqldiff",
         Short:   "针对 MySQL 差异 SQL 工具。",
-        Version: "v3.0.9",
+        Version: "v3.0.10",
         Run: func(cmd *cobra.Command, args []string) {
             if source == "" {
                 source = os.Getenv("MYSQLDIFF_SOURCE")

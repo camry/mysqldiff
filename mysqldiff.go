@@ -1,8 +1,9 @@
 package main
 
 import (
-    "go-mysqldiff/cmd"
     "log"
+
+    "go-mysqldiff/cmd"
 )
 
 func main() {
