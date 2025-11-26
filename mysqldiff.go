@@ -3,7 +3,7 @@ package main
 import (
     "log"
 
-    "go-mysqldiff/cmd"
+    "mysqldiff/cmd"
 )
 
 func main() {
