@@ -11,6 +11,9 @@ import (
 // DROP TABLE Or DROP VIEW...
 func drop(sourceTableMap map[string]Table, targetTableData []Table) {
     for _, targetTable := range targetTableData {
+        if len(tables) > 0 && !lo.Contains(tables, targetTable.TableName) {
+            continue
+        }
         if _, ok := sourceTableMap[targetTable.TableName]; !ok {
             switch targetTable.TableType {
             case "BASE TABLE":

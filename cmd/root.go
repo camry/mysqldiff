@@ -9,6 +9,7 @@ import (
     "strings"
     "sync"
 
+    "github.com/samber/lo"
     "github.com/spf13/cobra"
     "gorm.io/driver/mysql"
     "gorm.io/gorm"
@@ -31,6 +32,7 @@ func init() {
     rootCmd.Flags().StringVarP(&source, "source", "s", "", "指定源服务器。(格式: <user>:<password>@<host>:<port>)")
     rootCmd.Flags().StringVarP(&target, "target", "t", "", "指定目标服务器。(格式: <user>:<password>@<host>:<port>)")
     rootCmd.Flags().StringVarP(&db, "db", "d", "", "指定数据库。(格式: <source_db>:<target_db>)")
+    rootCmd.Flags().StringSliceVarP(&tables, "tables", "T", []string{}, "指定表。(多个表用英文逗号分隔)")
     rootCmd.Flags().BoolVarP(&comment, "comment", "c", false, "是否比对注释？")
     rootCmd.Flags().BoolVarP(&foreign, "foreign", "f", false, "是否比对外键？")
     rootCmd.Flags().BoolVarP(&tidb, "tidb", "i", false, "是否 TiDB ？")
@@ -52,6 +54,7 @@ var (
     source  string
     target  string
     db      string
+    tables  []string
     comment bool
     foreign bool
     tidb    bool
@@ -62,7 +65,7 @@ var (
     rootCmd = &cobra.Command{
         Use:     "mysqldiff",
         Short:   "针对 MySQL 差异 SQL 工具。",
-        Version: "v3.0.12",
+        Version: "v3.0.13",
         Run: func(cmd *cobra.Command, args []string) {
             if source == "" {
                 source = os.Getenv("MYSQLDIFF_SOURCE")
@@ -213,6 +216,9 @@ var (
             defer close(ch)
 
             for _, sourceTable := range sourceTableData {
+                if len(tables) > 0 && !lo.Contains(tables, sourceTable.TableName) {
+                    continue
+                }
                 wg.Add(1)
                 go diff(sourceDbConfig, targetDbConfig, sourceDb, targetDb, sourceSchema, sourceTable, targetTableMap)
             }
