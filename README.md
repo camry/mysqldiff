@@ -22,7 +22,7 @@ Golang 针对 MySQL 数据库表结构的差异 SQL 工具。
 ## 安装
 
 ```bash
-go install github.com/camry/mysqldiff@latest
+go install github.com/camry/mysqldiff/v3@latest
 ```
 
 ## 使用
