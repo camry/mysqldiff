@@ -19,6 +19,12 @@ Golang 针对 MySQL 数据库表结构的差异 SQL 工具。
 - [ ] 比对事件
 - [ ] 比对定义者
 
+## 安装
+
+```bash
+go install github.com/camry/mysqldiff@latest
+```
+
 ## 使用
 
 ```bash
