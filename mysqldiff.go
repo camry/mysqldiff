@@ -3,7 +3,7 @@ package main
 import (
     "log"
 
-    "mysqldiff/cmd"
+    "github.com/camry/mysqldiff/cmd"
 )
 
 func main() {
