@@ -1,4 +1,4 @@
-module github.com/camry/mysqldiff
+module github.com/camry/mysqldiff/v3
 
 go 1.25.0
 
