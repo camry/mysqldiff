@@ -27,8 +27,6 @@ func Execute() error {
 }
 
 func init() {
-    cobra.OnInitialize(initConfig)
-
     rootCmd.Flags().StringVarP(&source, "source", "s", "", "指定源服务器。(格式: <user>:<password>@<host>:<port>)")
     rootCmd.Flags().StringVarP(&target, "target", "t", "", "指定目标服务器。(格式: <user>:<password>@<host>:<port>)")
     rootCmd.Flags().StringVarP(&db, "db", "d", "", "指定数据库。(格式: <source_db>:<target_db>)")
@@ -39,11 +37,6 @@ func init() {
 
     // cobra.CheckErr(rootCmd.MarkFlagRequired("source"))
     cobra.CheckErr(rootCmd.MarkFlagRequired("db"))
-
-    rootCmd.AddCommand(completionCmd)
-}
-
-func initConfig() {
 }
 
 var (
@@ -65,7 +58,7 @@ var (
     rootCmd = &cobra.Command{
         Use:     "mysqldiff",
         Short:   "针对 MySQL 差异 SQL 工具。",
-        Version: "v3.0.13",
+        Version: "v3.0.14",
         Run: func(cmd *cobra.Command, args []string) {
             if source == "" {
                 source = os.Getenv("MYSQLDIFF_SOURCE")
